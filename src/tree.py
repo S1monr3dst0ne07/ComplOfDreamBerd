@@ -9,13 +9,8 @@ import error
 import sym
 import obj
 import builtin
-import conf
-import dbx
 
 
-
-deleted_features = set()
-deleted_values   = list()
 
 # function calls and Variable accesses cannot be differentiated at parse-time.
 # hence they both are unified under the AstScopeAccess node type.
@@ -96,37 +91,6 @@ class AstScopeAccess:
         ], kind='string')
 
 
-    def run(self, ctx, lvalue=False):
-        if self._check_string_without_quote(ctx) and not lvalue: 
-            return self._process_string_without_quote(ctx)
-
-        params = (
-            ([self._var_lookup(ctx, self.subj)] if self.subj is not None else []) + 
-             [x.run(ctx) for x in self.params]
-        )
-        value = self._var_lookup(ctx, self.iden)
-
-        if value.kind == 'metafunc':
-            # calls as function if type if iden in scope is metafunc
-            return value.content(*params)
-
-        if value.kind == 'signal':
-            if len(params) > 0:
-                value.content = params[0]
-
-            return value.content
-
-        #if the parameter counts don't match, it's a function literal
-        func_run_continue = lambda: value.content.call(ctx, params)
-        if value.kind == 'func' and len(params) == len(value.content.params):
-            if value.content._async:
-                ctx.running_async = True
-                ctx.running_async_continue = func_run_continue
-            else:
-                return func_run_continue()
-
-        #otherwise it has to have been a variable access
-        return value
 
     def vars(self):
         return [self.iden] + [x.vars() for x in self.params]
@@ -154,12 +118,6 @@ class AstLitArray:
 
         return cls(elems)
 
-    def run(self, ctx):
-        return obj.Value(
-            content = { i : x.run(ctx) for i, x in enumerate(self.elems) },
-            kind = 'array',
-        )
-
 @dc
 class AstLitDict:
     def order(self): pass
@@ -170,9 +128,6 @@ class AstLitDict:
         stream.expect("}")
 
         return cls()
-
-    def run(self, ctx):
-        return obj.Value(content={}, kind='dict')
 
 @dc
 class AstIndexAccess:
@@ -191,31 +146,11 @@ class AstIndexAccess:
 
         return cls(name, index)
 
-    def run(self, ctx, lvalue=False):
-        value = ctx.scope[self.name]
-        index = self.index.run(ctx)
-
-        match value.kind:
-            case 'array':
-                if index.kind not in ('int', 'float'):
-                    error.error(f"Array access with non-numeric index: `{index.content}`")
-
-                index = index.content + 1
-                if lvalue and index not in value.content:
-                    value.content[index] = obj.Value(None, 'null')
-                return value.content[index]
-
-            case 'dict':
-                if index not in value.content:
-                    value.content[index] = obj.Value(None, 'undefined')
-                return value.content[index]
-        
-
 
 
 @dc
 class AstLeaf:
-    META_VALUES = (AstScopeAccess, AstLitArray, AstLitDict, AstIndexAccess, dbx.AstHtml)
+    META_VALUES = (AstScopeAccess, AstLitArray, AstLitDict, AstIndexAccess)
     value : typing.Any
 
     def infer(self): pass
@@ -233,102 +168,6 @@ class AstLeaf:
             if char == '"': size += 2
 
         return size
-
-    def _format_string(self, ctx):
-        currency = conf.locale_currency_mapper[conf.Config.locale]
-        string = self.value.render()
-        if currency.symbol not in string: return self.value
-
-        out = []
-        symbol_state = False
-        reading_name = False
-        name = ""
-
-        match currency.kind:
-            case 'prefix':
-                for char in string:
-                    if char == '{' and symbol_state: #}
-                        reading_name = True
-                        continue
-                    if char == '}' and reading_name:
-                        reading_name = False
-                        if name in ctx.scope:
-                            out.pop(-1) #remove prefix
-                            out.append(ctx.scope[name].render())
-                        else:
-                            out.append("{")
-                            out.append(name)
-                            out.append("}")
-
-                        continue
-                        
-                    if reading_name: name += char
-                    else: out.append(char)
-                    symbol_state = char == currency.symbol
-            case 'suffix':
-                for char in string:
-                    if char == '{': #}
-                        reading_name = True
-                        continue
-                    if char == '}' and reading_name:
-                        reading_name = False
-                        symbol_state = True
-                        continue
-
-                    if symbol_state:
-                        symbol_state = False
-                        if char == currency.symbol:
-                            if name in ctx.scope:
-                                out.append(ctx.scope[name].render())
-                                continue
-                            else:
-                                out.append("{")
-                                out.append(name)
-                                out.append("}")
-                        
-                    if reading_name: name += char
-                    else: out.append(char)
-            case 'infix':
-                for char in string:
-                    if reading_name and char == currency.symbol:
-                        symbol_state = True
-                    if char == '{': #}
-                        reading_name = True
-                        continue
-                    if char == '}' and reading_name:
-                        reading_name = False
-
-                        iden, field = name.split(currency.symbol) 
-                        def _extract():
-                            if not symbol_state: return False
-                            if iden not in ctx.scope: return False
-                            value = ctx.scope[iden]
-                            if value.kind != 'dict': return False
-                            decoded = {k.render() : v for k,v in value.content.items()}
-                            if field not in decoded: return False
-
-                            out.append(decoded[field].render())
-                            return True
-                        
-                        if _extract():
-                            continue
-                        else:
-                            out.append('{')
-                            out.append(name)
-
-                    if reading_name: name += char
-                    else: out.append(char)
-
-            case x:
-                error.internal(f"undefined currency kind: `{x}`")
-
-
-        return obj.Value(
-            content=[
-                obj.Value(content = x, kind = 'char')
-                for x in "".join(out)],
-            kind = 'string'
-        )
 
     @classmethod
     def _parse_string(cls, stream):
@@ -376,27 +215,9 @@ class AstLeaf:
                 else:
                     value = AstScopeAccess.parse(stream)
 
-            case 'lifeopen':
-                value = dbx.AstHtml.parse(stream)
-
             case x: error.error(f"Unknown leaf kind: {stream.popt()}")
 
         return cls(value)
-
-    def run(self, ctx):
-        if type(self.value) in self.META_VALUES:
-            return self.value.run(ctx)
-
-        #renamed literal number
-        numb_name = str(self.value.content)
-        if self.value.kind == 'int' and numb_name in ctx.scope:
-            return ctx.scope[numb_name]
-
-        #format string
-        if self.value.kind == 'string':
-            return self._format_string(ctx)
-
-        return self.value
 
     def vars(self):
         if type(self.value) is obj.Value:
@@ -506,95 +327,6 @@ class AstExpr:
         )
 
 
-    def run(self, ctx):
-        left  = self.left.run(ctx)
-        right = self.right.run(ctx)
-
-
-        l = left.content
-        r = right.content
-        kind = None
-
-        def string_to_number_cast():
-            nonlocal l, r
-            _convert = lambda x: float(x) if '.' in x else int(x)
-            if left.kind  == 'string': l = _convert(left.render())
-            if right.kind == 'string': r = _convert(right.render())
-
-        match self.op:
-            # accursed by ye, brendan eich, for making javascript.
-            # and also for being a homophobic (and prolly transphobic, let's be real) bastard.
-            case '+': 
-                if 'string' in (left.kind, right.kind):
-                    kind = 'string'
-                    res = [
-                        obj.Value(content=char, kind='char') 
-                        for char in left.render() + right.render()
-                    ]
-                elif all(x in ('float', 'int') for x in (left.kind, right.kind)):
-                    kind = 'float' if 'float' in (left.kind, right.kind) else 'int'
-                    res = l + r
-                elif left.kind == right.kind == 'array':
-                    kind = left.kind
-                    offset = max(l.keys()) - min(r.keys()) + 1
-                    res = l | { k + offset : v for k,v in r.items() }
-                elif left.kind == right.kind == 'dict':
-                    kind = left.kind
-                    res = l | r
-                else:
-                    error.error(f"Cannot add `{left.render()}` and `{right.render()}` because they are containers and types do not match.")
-
-            case x if x in ('-', '*', '/', '^'):
-                string_to_number_cast()
-                if any(x.kind in ('dict', 'array') for x in (left, right)):
-                    _error(x)
-
-                match x:
-                    case '-': res = l - r
-                    case '*': res = l * r
-                    case '/': res = (l / r) if r != 0 else None
-                    case '^': res = l ** r
-
-                match res:
-                    case float(): kind = 'float'
-                    case int():   kind = 'int'
-                    case None:    kind = 'undefined' # aka NaN
-                    case x: error.internal("binary expression on numeric values yielded non-numeric type.")
-
-                if 'magictime' in (left.kind, right.kind):
-                    kind = 'magictime'
-
-            case '====':
-                #cursed ast comparison
-                kind = 'bool'
-                res = self.left == self.right
-
-            case '===': # tight equality
-                kind = 'bool'
-                res = l == r
-
-            case '==': # loose equality
-                kind = 'bool'
-                string_to_number_cast()
-                res = l == r
-
-            case '=': # even looser equality
-                kind = 'bool'
-                string_to_number_cast()
-                if type(l) is float: l = round(l)
-                if type(r) is float: r = round(r)
-                res = l == r
-
-            case ';=': res = l != r
-            case '<': res = l < r
-            case '>': res = l > r
-
-            case x: _error(x)
-
-        def _error(x):
-            error.error(f"Operation `{x}` is not defined for `{left.render()}` and `{right.render()}`.")
-
-        return obj.Value(content=res, kind=kind)
 
     def vars(self):
         return self.left.vars() + self.right.vars()
@@ -733,32 +465,6 @@ class AstBlock:
             stmt.infer()
 
 
-    def run(self, ctx, index=0):
-        #update variable livenesses
-        def update(name, state):
-            if name not in ctx.scope:
-                #make sure alive variables are present in scope.
-                #this is the actual time travel part right here lol,
-                #we're executing a statement before it should actual run.
-                if state: self.decl_init[name].run(ctx)
-                else: return
-
-            ctx.scope[name].stmt_alive = state
-
-        for name in self.stmt_alive[index]: update(name, True)
-        for name in self.stmt_dead [index]: update(name, False)
-
-        #actual statment execution
-        res = self.stmts[index].run(ctx)
-        step = index + ctx.offset
-
-        #scheduler base case
-        if len(self.stmts) == step or step < 0:
-            return ctx.scheduler(lambda: res)
-
-        #pass continuation into context scheduler.
-        # this is some fucking haskell level programming right here.
-        return ctx.scheduler(lambda: self.run(ctx, step))
 
 
 @dc
@@ -836,11 +542,6 @@ class AstDecl:
         if stream.peek() not in ('const', 'var'):
             error.token(stream.pop(), "`const` / `var` not followed by `const` / `var`.")
         second_storage_type = stream.pop()
-
-        if 'const' in deleted_features and 'const' in (first_storage_type, second_storage_type):
-            error.error("Feature `const` has been deleted.")
-        if 'var' in deleted_features and 'var' in (first_storage_type, second_storage_type):
-            error.error("Feature `var` has been deleted.")
 
         assignable = {'const' : False, 'var' : True}[first_storage_type]
         editable   = {'const' : False, 'var' : True}[second_storage_type]
@@ -963,24 +664,11 @@ class AstAssign:
 
         return cls(dst, src)
 
-    def run(self, ctx):
-        dst = self.dst.run(ctx, lvalue=True)
-        src = self.src.run(ctx)
-
-        dst._pre_mut()
-
-        dst.content = src.content
-        dst.kind    = src.kind
-
-        dst._assign(ctx)
-
 @dc
 class AstFuncDef:
     name : str
     params : list[str]
     body : AstBlock | AstExpr
-
-    _async : bool
 
     def order(self): 
         new = self.body.order()
@@ -991,7 +679,7 @@ class AstFuncDef:
         self.body.infer()
 
     @classmethod
-    def parse(cls, stream, _async=False):
+    def parse(cls, stream):
         if 'function' in deleted_features:
             error.error("Functions have been deleted.")
 
@@ -1011,59 +699,10 @@ class AstFuncDef:
         else:
             body = AstExpr.parse(stream)
 
-        return cls(name, params, body, _async)
-
-    def run(self, ctx):
-        ctx.scope[self.name] = obj.Value(self, kind='func')
-
-    def call(self, ctx, params):
-        ctx.push_scope()
-
-        for k,v in zip(self.params, params):
-            ctx.scope[k] = v
-
-        res = self.body.run(ctx)
-
-        ctx.pop_scope()
-        return res
+        return cls(name, params, body)
 
 
 
-
-@dc
-class AstDelete:
-    target : "AstExpr | None"
-
-    @classmethod
-    def parse(cls, stream):
-        if 'delete' in deleted_features:
-            error.error("Deletions have themselves been deleted.")
-
-        stream.expect('delete')
-
-        target = None
-        match stream.peek():
-            case x if x in ('if', 'when', 'class', 'const', 'var', 'delete'):
-                deleted_features.add(x)
-                stream.pop()
-
-            case x if AstStmt._is_func_keyword(x): 
-                deleted_features.add('function')
-                stream.pop()
-
-            case x:
-                target = AstExpr.parse(stream)
-
-        return cls(target)
-
-    def order(self): 
-        if self.target is not None:
-            self.target.order()
-    def infer(self): pass
-
-    def run(self, ctx):
-        if self.target is not None:
-            deleted_values.append(self.target.run(ctx))
 
 
 @dc
@@ -1110,9 +749,6 @@ class AstStmt:
                 sub = AstClass.parse(stream)
                 need_eos = False
 
-            case 'delete', _:
-                sub = AstDelete.parse(stream)
-
             case _, '[': #]
                 sub = AstAssign.parse_index_access(stream)
 
@@ -1121,11 +757,6 @@ class AstStmt:
 
             case x, name if cls._is_func_keyword(x) and name.isalpha():
                 sub = AstFuncDef.parse(stream)
-                need_eos = type(sub.body) is AstExpr
-
-            case 'async', _: #OMG LIKE DA BACKROOMS (sorry)
-                stream.expect('async')
-                sub = AstFuncDef.parse(stream, _async=True)
                 need_eos = type(sub.body) is AstExpr
 
             case x, y if all(i in ('const', 'var') for i in (x, y)):
@@ -1235,12 +866,6 @@ class AstProg:
     def run_prog(self, prog, ctx):
         prog.order() #whitespace based binary expression reordering
         prog.infer() #lifetime inferrence pass 
-
-        builtin.inject(ctx)
-
-        ctx.load() #load persistent variables from database
-        prog.run(ctx)
-        ctx.save() #save persistent variables back to database
 
             
 

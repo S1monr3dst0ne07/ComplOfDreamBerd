@@ -1,41 +1,11 @@
 
-import time
-import pynput
 
 import obj
 import error
-from conf import Config
-
-key_down_funcs = list()
-key_up_funcs   = list()
-key_encode_literal = lambda event: obj.Value(content=[obj.Value(content=event.char, kind='char')], kind='string')
-key_listener = pynput.keyboard.Listener(
-    on_press    = lambda event: [x(key_encode_literal(event)) for x in key_down_funcs],
-    on_release  = lambda event: [x(key_encode_literal(event)) for x in key_up_funcs],
-)
-key_listener.start()
-
-mouse_click_funcs = list()
-mouse_listener = pynput.mouse.Listener(
-    on_click = lambda event: [
-        x(obj.Value(content=None, kind='null')) 
-        for x in mouse_click_funcs
-    ]
-)
-mouse_listener.start()
-
 
 
 class Builtin:
     ctx : obj.Ctx
-
-    def addEventListener(event, func):
-        metafunc = lambda param: func.content.call(Builtin.ctx, [param])
-        match event.render():
-            case 'keydown':    key_down_funcs.append(metafunc)
-            case 'keyup'  :      key_up_funcs.append(metafunc)
-            case 'click'  : mouse_click_funcs.append(metafunc)
-
 
 
     def _null():
@@ -67,9 +37,6 @@ class Builtin:
     def false():
         return obj.Value(content=False, kind='bool')
 
-    def sleep(secs):
-        time.sleep(1)
-
     def undefined():
         return obj.Value(content=None, kind='undefined')
     def maybe():
@@ -86,20 +53,6 @@ class Builtin:
     def nine():     return obj.Value(content= 9, kind='int')
     def ten():      return obj.Value(content=10, kind='int')
 
-    def current(x): return x
-
-    def next(x):
-        old = x.content
-
-        while old == x.content:
-            #yup, it just spinlocks :3
-            # hey! i never said that this was *good* implementation
-            time.sleep(0.1)
-
-        return x
-
-    def previous(x):
-        return x.previous
 
     def new(x):
         if x.kind != 'metaclass': return
@@ -133,30 +86,8 @@ class Builtin:
 
         return obj.Value(content, kind='class')
 
-    def Date():
-        return Builtin._null()
-
-    def now(x):
-        with open(Config.time_offset, 'r') as f:
-            offset = int(f.read())
-        return obj.Value(content=offset, kind='magictime')
-
     
-    def reverse():
-        Builtin.ctx.offset *= -1
 
-
-    def use(initial):
-        return obj.Value(
-            content = initial,
-            kind = 'signal',
-        )
-
-
-
-
-#technical info: await doesn't do anything.
-setattr(Builtin, "await", lambda x: x)
 
 
 def get_all():

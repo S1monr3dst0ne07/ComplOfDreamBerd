@@ -2,6 +2,8 @@
 
 // var var name = "Test"!
 var var name = 100!
+var var test = name + 20!
+print test!
 print name!
 
 

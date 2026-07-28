@@ -3,7 +3,7 @@
 #include <platform.c>
 #include <object.c>
 
-void print_numb(uint64_t x)
+void _print_numb(uint64_t x)
 {
     static char buffer[64];
     char* iter = buffer + sizeof(buffer);
@@ -24,10 +24,13 @@ void print_numb(uint64_t x)
 
 void print(object_t obj)
 {
+    // refernces always goes out of scope
+    ref_dec(obj);
+
     switch (obj->kind)
     {
         case KIND_INT:
-            print_numb((uint64_t)obj->data);
+            _print_numb((uint64_t)obj->data);
             break;
     }
     

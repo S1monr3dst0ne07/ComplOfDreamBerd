@@ -100,16 +100,27 @@ class AstScopeAccess:
         for param in self.params[::-1]:
             param.compile(ctx)
             ctx.emit("push rax")
-
+            
         #copy into passing regs
         for reg in binding.ABI[:len(self.params)]:
             ctx.emit(f"pop {reg}")
 
         ctx.emit(f"call {self.iden}")
 
+    def _compile_var(self, ctx):
+        # a new value reference is created
+        addr = ctx.scope[self.iden]
+        ctx.emit(f"mov rdi, [vars + {addr}*8]")
+        ctx.emit("push rdi")
+        ctx.emit("call ref_inc")
+        ctx.emit("pop rax")
+
     def compile(self, ctx):
         if self.iden not in ctx.scope:
             self._compile_call(ctx)
+
+        else:
+            self._compile_var(ctx)
 
 
 
@@ -354,10 +365,30 @@ class AstExpr:
         )
 
 
-
     def vars(self):
         return self.left.vars() + self.right.vars()
 
+    def compile(self, ctx):
+        print(self)
+        self.right.compile(ctx)
+        ctx.emit("mov rdi, rax")
+        ctx.emit("call deref_object")
+        ctx.emit("push rax")
+        self.left.compile(ctx)
+        ctx.emit("mov rdi, rax")
+        ctx.emit("call deref_object")
+        ctx.emit("pop rbx")
+
+
+        match self.op:
+            case '+': ctx.emit('add rax, rbx')
+
+            case x: print(f"impl op: {x}")
+
+
+        ctx.emit(f"mov rdi, {binding.KIND.INT}")
+        ctx.emit(f"mov rsi, rax")
+        ctx.emit("call create_object")
 
 
 
@@ -428,12 +459,6 @@ class AstWhen:
 class AstBlock:
     stmts : list["AstStmt"]
 
-    stmt_alive : list[set] #which vars alive during statement
-    stmt_dead  : list[set] #"-" dead "-"
-
-    #declaration have to be executed as soon as their lifetime starts 
-    decl_init  : dict[str, "AstDecl"]
-
     class BlockClose: pass
 
     @classmethod
@@ -447,50 +472,13 @@ class AstBlock:
             stmts.append(sub)
 
         if not prog: stream.expect('}')
-        return cls(stmts, [], [], {})
+        return cls(stmts)
 
     def order(self):
         for stmt in self.stmts:
             stmt.order()
 
-
-    def infer(self):
-        self.stmt_alive = [set() for _ in self.stmts]
-        relevent_stmts = [
-            stmt for stmt in self.stmts 
-            if type(stmt.sub) is AstDecl and
-            stmt.sub.lifetime is not None and
-            stmt.sub.lifetype == 'stmt'
-        ]
-
-        for stmt in relevent_stmts:
-            decl = stmt.sub
-            self.decl_init[decl.name] = decl
-
-        #compute which variables are alive during each statement
-        for index, stmt in enumerate(self.stmts):
-            if stmt not in relevent_stmts: continue
-            decl = stmt.sub
-
-            timetravel = decl.lifetime < 0
-            offset_offset = (-1 if timetravel else 1)
-            offset = offset_offset
-            for _ in range(abs(decl.lifetime)):
-                target = index + offset
-                if abs(target) < len(self.stmt_alive):
-                    self.stmt_alive[target].add(decl.name)
-                offset += offset_offset
-
-        #compute compliment (insert deep quote about yin and yang or smth)
-        for index, stmt in enumerate(self.stmts):
-            self.stmt_dead.append(set(
-                varname for varname in [x.sub.name for x in relevent_stmts]
-                if varname not in self.stmt_alive[index]
-            ))
-
-        #recursive infer
-        for stmt in self.stmts:
-            stmt.infer()
+    def infer(self): pass
 
     def compile(self, ctx):
         for stmt in self.stmts:
@@ -526,116 +514,44 @@ class AstClass:
 
 @dc
 class AstDecl:
-    editable   : bool
-    assignable : bool
     name : str 
     expr : AstExpr
-
-    lifetime : int | None
-    lifetype : typing.Literal['default', 'stmt', 'sec', 'infty'] 
-
-    # how many exclaimation mark
-    priority : int = 0
-
 
     def order(self): self.expr = self.expr.order()
     def infer(self): pass
 
-
-
     @classmethod
     def parse(cls, stream):
-        first_storage_type = stream.pop()
-        if stream.peek() not in ('const', 'var'):
-            error.token(stream.pop(), "`const` / `var` not followed by `const` / `var`.")
-        second_storage_type = stream.pop()
-
-        assignable = {'const' : False, 'var' : True}[first_storage_type]
-        editable   = {'const' : False, 'var' : True}[second_storage_type]
-
-        # new for 2023!
-        eternal = False
-        if not assignable and not editable and stream.peek() == 'const':
-            stream.expect('const')
-            eternal = True
+        stream.pop() #first   storage classifier
+        stream.pop() #seconed storage classifier
             
         name = stream.pop()
 
-        lifetime = None
-        lifetype = 'default'
-
         if stream.peekt().kind == 'lifeopen':
-            lifetype = 'stmt'
-            stream.expect('<')
-
-            if stream.peek() == 'Infinity':
-                stream.pop()
-                lifetype = 'infty'
-
-            sign = stream.peek() == '-'
-            if sign: stream.expect('-')
-
-            if stream.peek().isdigit():
-                lifetime = int(stream.pop()) * (-1 if sign else 1)
-
-            if stream.peek() == 's':
-                stream.expect('s')
-                lifetype = 'sec'
-
-            stream.expect('>')
-
-        #type annotation
+            error.error('lifetimes not supported. send patches.')
         if stream.peek() == ':':
-            stream.expect(':')
-            word = stream.pop()
-
-            reregegexx = regex.compile("Reg(ular)?[eE]x(p(ression)?)?")
-            if not reregegexx.match(word):
-                while stream.peek() != '=': stream.pop()
-            else:
-                stream.expect("<")
-                while stream.pop() != '>': pass
+            error.error('type annotations not supported. send patches.')
 
         stream.expect('=')
 
         expr = AstExpr.parse(stream)
+
         return cls(
-            editable=editable, 
-            assignable=assignable, 
             name=name, 
             expr=expr, 
-            lifetime=lifetime, 
-            lifetype=lifetype
         )
 
-
-
-    def run(self, ctx):
-        init = self.expr.run(ctx)
-
-        init.editable = self.editable
-        init.assignable = self.assignable
-
-        for name in self.names:
-            # make priority is followed
-            if name in ctx.scope:
-                if ctx.scope[name].priority > self.priority:
-                    return
-
-            ctx.scope[name] = init
-            ctx.scope[name].lifetime = self.lifetime
-            ctx.scope[name].lifetype = self.lifetype
-            ctx.scope[name].priority = self.priority
-
-            # register local creation time
-            ctx.scope[name].time_born = time.time()
-
-            # upload variable to database if eternal
-            if self.eternal: ctx.eternal_upload(name)
             
     def compile(self, ctx):
-        init = self.expr.compile(ctx)
-        ctx.scope[self.name] = init
+        if self.name in ctx.scope:
+            error.error("Variable `{self.name}` declared multiple times.")
+
+        addr = ctx.alloc(self.name)
+
+        self.expr.compile(ctx)
+        ctx.emit(f"mov [vars + {addr}*8], rax")
+        
+        ctx.scope[self.name] = addr
 
 
 

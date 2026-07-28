@@ -13,10 +13,12 @@ enum
 {
     SYS_WRITE = 1,
     SYS_BRK   = 12,
+    SYS_EXIT  = 60,
 };
 
 #define SYS_CLOBBERS "rcx","r11","memory"
 #define SYS_STDOUT 1
+
 
 
 void outchar(char c)
@@ -39,6 +41,7 @@ uintptr_t brk(uintptr_t new)
     );
     return old;
 }
+
 
 
 // oh unix gods, bless this sbrk!

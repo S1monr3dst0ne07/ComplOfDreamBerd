@@ -39,11 +39,19 @@ uintptr_t brk(uintptr_t new)
 }
 
 
-
-uintptr_t current_break;
-
-void init()
+// oh unix gods, bless this sbrk!
+// may it never segfault, eventho it's ass.
+void* sbrk(size_t inc)
 {
+    static uintptr_t curr = 0;
+
+    // initialize to end-of-program address
+    if (!curr) curr = brk(0);
+
+    void* old = (void*)curr;
+    curr += inc;
+    brk(curr); // update break
+    return old;
 }
 
 

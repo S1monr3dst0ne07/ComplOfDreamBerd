@@ -1,3 +1,5 @@
+#ifndef _G_PLATFORM
+#define _G_PLATFORM
 
 #include <stdint.h>
 #include <stddef.h>
@@ -166,3 +168,6 @@ void free(void *base)
     freeptr = neigh;
 }
 
+
+
+#endif

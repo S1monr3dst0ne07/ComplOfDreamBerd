@@ -37,12 +37,14 @@ class Ctx:
     def header(self):
         self.emit("format ELF64")
         self.emit("public _start")
+
         self.emit("extrn outchar")
+        self.emit("extrn print")
+        self.emit("extrn create_object")
+
         self.emit("section '.text' executable")
         self.emit("_start:")
-        #self.emit("call main")
-        self.emit("mov rdi, 'A'")
-        self.emit("call outchar")
+        self.emit("call main")
         self.emit("mov rax, 60")
         self.emit("mov rdi, 0")
         self.emit("syscall")

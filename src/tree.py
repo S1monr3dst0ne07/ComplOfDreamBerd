@@ -8,6 +8,7 @@ import lex
 import error
 import sym
 from ctx import Ctx
+import binding
 
 
 
@@ -94,9 +95,21 @@ class AstScopeAccess:
     def vars(self):
         return [self.iden] + [x.vars() for x in self.params]
 
+    def _compile_call(self, ctx):
+        #load paramters
+        for param in self.params[::-1]:
+            param.compile(ctx)
+            ctx.emit("push rax")
+
+        #copy into passing regs
+        for reg in binding.ABI[:len(self.params)]:
+            ctx.emit(f"pop {reg}")
+
+        ctx.emit(f"call {self.iden}")
+
     def compile(self, ctx):
-        if self.iden in ctx.scope:
-            ctx.builder.call()
+        if self.iden not in ctx.scope:
+            self._compile_call(ctx)
 
 
 
@@ -153,7 +166,7 @@ class AstIndexAccess:
 
 @dc
 class AstLeaf:
-    kind : str
+    kind : int # binding.KIND
     value : typing.Any
 
     def infer(self): pass
@@ -189,16 +202,8 @@ class AstLeaf:
     def parse(cls, stream):
         match stream.peekt().kind:
             case 'numb':
-                """
-                leaf = int(stream.pop())
-                kind = 'int'
-                if stream.peekt().kind == 'dot':
-                    stream.pop()
-                    leaf += float(f"0.{stream.pop()}")
-                    kind = 'float'
-                
-                value = obj.Value(leaf, kind)
-                """
+                value = int(stream.pop())
+                return cls(binding.KIND.INT, value)
 
             case 'quote': 
                 content = cls._parse_string(stream)
@@ -223,17 +228,27 @@ class AstLeaf:
 
         return self.value.vars()
 
+    def _create_object(self, ctx):
+        # create actual runtime object from rax
+        ctx.emit(f"mov rdi, {self.kind}")
+        ctx.emit(f"mov rsi, rax")
+        ctx.emit("call create_object")
+
     def compile(self, ctx):
         match self.kind:
             case 'string':
                 label = ctx.fresh()
                 ctx.emit(f"mov rax, {label}")
+                self._create_object(ctx)
+
                 ctx.strings[label] = self.value
 
-            case 'scope':
-                #self.value.compile(ctx)
-                pass
+            case binding.KIND.INT:
+                ctx.emit(f"mov rax, {self.value}")
+                self._create_object(ctx)
 
+            case 'scope':
+                self.value.compile(ctx)
 
             case x: print("todo impl leaf kind: ", self.kind)
 
@@ -804,7 +819,9 @@ class AstProg:
         ctx = Ctx()
         
         ctx.header()
+        ctx.emit("main:") #BAD BAD GET RID OF THIS
         self.body.compile(ctx)
+        ctx.emit("ret")
         ctx.finalize()
 
         return ctx.output

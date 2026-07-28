@@ -7,8 +7,7 @@ from dataclasses import dataclass as dc
 import lex
 import error
 import sym
-import obj
-import builtin
+from ctx import Ctx
 
 
 
@@ -72,7 +71,7 @@ class AstScopeAccess:
     
         var = ctx.scope[iden]
         if not var.alive():
-            error.error(f"Trying to access variable `{iden}` but it's dead :(")
+            error.error(f"Trying to access variable `{iden}` but it's dead :(") #)
     
         return ctx.scope[iden]
 
@@ -94,6 +93,10 @@ class AstScopeAccess:
 
     def vars(self):
         return [self.iden] + [x.vars() for x in self.params]
+
+    def compile(self, ctx):
+        if self.iden in ctx.scope:
+            ctx.builder.call()
 
 
 
@@ -150,12 +153,12 @@ class AstIndexAccess:
 
 @dc
 class AstLeaf:
-    META_VALUES = (AstScopeAccess, AstLitArray, AstLitDict, AstIndexAccess)
+    kind : str
     value : typing.Any
 
     def infer(self): pass
     def order(self):
-        if type(self.value) in self.META_VALUES:
+        if self.kind in ('scope', 'index'):
             self.value.order()
 
         return self
@@ -186,6 +189,7 @@ class AstLeaf:
     def parse(cls, stream):
         match stream.peekt().kind:
             case 'numb':
+                """
                 leaf = int(stream.pop())
                 kind = 'int'
                 if stream.peekt().kind == 'dot':
@@ -194,36 +198,44 @@ class AstLeaf:
                     kind = 'float'
                 
                 value = obj.Value(leaf, kind)
+                """
 
             case 'quote': 
-                value = obj.Value(
-                    content = [
-                        obj.Value(content = x, kind = 'char') 
-                        for x in cls._parse_string(stream)
-                    ],
-                    kind = 'string'
-                )
+                content = cls._parse_string(stream)
+                return cls('string', content)
                 
-            case 'arrayopen':
-                value = AstLitArray.parse(stream)
-            case 'blockopen':
-                value = AstLitDict.parse(stream)
+            case 'arrayopen': pass
+                #value = AstLitArray.parse(stream)
+            case 'blockopen': pass
+                #value = AstLitDict.parse(stream)
 
             case 'iden' | 'sym': 
                 if stream.lookhead(2)[1].kind == 'arrayopen':
-                    value = AstIndexAccess.parse(stream)
+                    return cls('index', AstIndexAccess.parse(stream))
                 else:
-                    value = AstScopeAccess.parse(stream)
+                    return cls('scope', AstScopeAccess.parse(stream))
 
             case x: error.error(f"Unknown leaf kind: {stream.popt()}")
-
-        return cls(value)
 
     def vars(self):
         if type(self.value) is obj.Value:
             return []
 
         return self.value.vars()
+
+    def compile(self, ctx):
+        match self.kind:
+            case 'string':
+                label = ctx.fresh()
+                ctx.emit(f"mov rax, {label}")
+                ctx.strings[label] = self.value
+
+            case 'scope':
+                #self.value.compile(ctx)
+                pass
+
+
+            case x: print("todo impl leaf kind: ", self.kind)
 
 
 @dc
@@ -426,6 +438,7 @@ class AstBlock:
         for stmt in self.stmts:
             stmt.order()
 
+
     def infer(self):
         self.stmt_alive = [set() for _ in self.stmts]
         relevent_stmts = [
@@ -464,6 +477,9 @@ class AstBlock:
         for stmt in self.stmts:
             stmt.infer()
 
+    def compile(self, ctx):
+        for stmt in self.stmts:
+            stmt.compile(ctx)
 
 
 
@@ -486,14 +502,6 @@ class AstClass:
         body = AstBlock.parse(stream)
         return cls(name, body)
 
-    def run(self, ctx):
-        ctx.scope[self.name] = obj.Value(
-            content = { 
-                'ast': self, 
-                'used': False  #has class object been instantiated?
-            },
-            kind = 'metaclass',
-        )
 
 
 
@@ -505,15 +513,11 @@ class AstClass:
 class AstDecl:
     editable   : bool
     assignable : bool
-    names : set[str]
-    name : str # "proper name"
+    name : str 
     expr : AstExpr
 
     lifetime : int | None
     lifetype : typing.Literal['default', 'stmt', 'sec', 'infty'] 
-
-    # "immutable data"
-    eternal : bool
 
     # how many exclaimation mark
     priority : int = 0
@@ -522,18 +526,6 @@ class AstDecl:
     def order(self): self.expr = self.expr.order()
     def infer(self): pass
 
-    @staticmethod
-    def _extract_names(stream):
-        if stream.peek() == '[': #]
-            stream.expect('[')
-            first = AstDecl._extract_names(stream)
-            stream.expect(',')
-            second = AstDecl._extract_names(stream)
-            stream.expect(']')
-            return first | second
-
-        else:
-            return { stream.pop() }
 
 
     @classmethod
@@ -552,7 +544,7 @@ class AstDecl:
             stream.expect('const')
             eternal = True
             
-        names = cls._extract_names(stream)
+        name = stream.pop()
 
         lifetime = None
         lifetype = 'default'
@@ -595,12 +587,10 @@ class AstDecl:
         return cls(
             editable=editable, 
             assignable=assignable, 
-            names=names, 
-            name = list(names)[0],
+            name=name, 
             expr=expr, 
             lifetime=lifetime, 
-            lifetype=lifetype, 
-            eternal=eternal
+            lifetype=lifetype
         )
 
 
@@ -628,6 +618,11 @@ class AstDecl:
             # upload variable to database if eternal
             if self.eternal: ctx.eternal_upload(name)
             
+    def compile(self, ctx):
+        init = self.expr.compile(ctx)
+        ctx.scope[self.name] = init
+
+
 
 
 
@@ -778,94 +773,41 @@ class AstStmt:
         stream.space()
         return cls(sub, eos)
 
-    def run(self, ctx):
-        res = self.sub.run(ctx)
+    def compile(self, ctx):
+        res = self.sub.compile(ctx)
         
         match self.eos:
-            case "?": print(f"[DEBUG] {res.render()}")
+            case "?": print("implemented debug");
 
         return res
+
+
 
     
 
 
 @dc
 class AstProg:
-    @dc
-    class File:
-        prog : AstBlock
-        ctx  : obj.Ctx
-        exports: list[tuple[
-            str, # function name
-            str, # target file
-        ]]
-
-    files : dict[str, AstBlock]
-
-    @staticmethod
-    def _anon_file_name_gen():
-        i = 0
-        while True:
-            yield f"anon_func_{i}"
-            i += 1
+    body : AstBlock
 
     @classmethod
     def load(cls, src):
-        default_name = 'main'
-        name = default_name
-        name_gen = AstProg._anon_file_name_gen()
+        stream = lex.tokenize(src)
 
-        files = {}
-        buffer = []
-        exports = []
-
-        # parse files separately
-        def emit(line):
-            nonlocal buffer, name, files, exports
-            if name == "": name = next(name_gen)
-            file = "\n".join(buffer)
-            if file.strip() != "":
-                stream = lex.tokenize(file)
-                files[name] = AstProg.File(
-                    prog=AstBlock.parse(stream, prog=True), #program
-                    ctx=obj.Ctx(), #program execution context
-                    exports=exports, #exports of the program
-                )
-            buffer = []
-            exports = []
-            name = line.strip("= ")
-
-        for line in src.split('\n'):
-            if line.startswith('=' * 5): emit(line)
-                # technical info: the import statement doesn't do anything.
-            elif line.startswith('import'): pass
-            elif line.startswith('export'):
-                _, func_name, _, target = line.strip('!').split(' ')
-                target = target.strip('"')
-                exports.append((func_name, target))
-            else: buffer.append(line)
-        emit("")
-    
-        return cls(files)
+        body = AstBlock.parse(stream, prog=True)
+        body.order()
+        body.infer()
+        return cls(body)
 
 
-    def run(self):
-        for name, file in self.files.items():
-            self.run_file(file)
+    def compile(self):
+        ctx = Ctx()
+        
+        ctx.header()
+        self.body.compile(ctx)
+        ctx.finalize()
 
-        return self.files
-
-    def run_file(self, file : "AstProg.File"):
-        self.run_prog(file.prog, file.ctx)
-
-        #execute exports
-        for func, target in file.exports:
-            value = file.ctx.scope[func]
-            self.files[target].ctx.scope[func] = value
-
-    def run_prog(self, prog, ctx):
-        prog.order() #whitespace based binary expression reordering
-        prog.infer() #lifetime inferrence pass 
+        return ctx.output
 
             
 

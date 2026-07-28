@@ -1,6 +1,5 @@
 
 import sys
-import smtplib
 
 
 def error(msg):

@@ -2,8 +2,8 @@ import sys
 
 import lex
 import tree
-import obj
 import error
+
 
 def main():
     path = sys.argv[1]
@@ -12,8 +12,11 @@ def main():
         src = f.read()
 
     root = tree.AstProg.load(src)
-    print(root)
-    #root.run()
+    asm = root.compile()
+
+    with open("build.asm", "w") as f:
+        f.write(asm)
+
 
     
 

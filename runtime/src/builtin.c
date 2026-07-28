@@ -25,7 +25,7 @@ void _print_numb(uint64_t x)
 void print(object_t obj)
 {
     // refernces always goes out of scope
-    ref_dec(obj);
+    dec_object(obj);
 
     switch (obj->kind)
     {

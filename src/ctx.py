@@ -9,6 +9,7 @@ import error
 import tree
 
 
+WORD_SIZE = 8
 
 @dc
 class Ctx:
@@ -31,7 +32,7 @@ class Ctx:
         if name not in self.scope:
             self.scope[name] = self._vars
             self._vars += 1
-        return self.scope[name]
+        return self.scope[name] * WORD_SIZE
 
     def header(self):
         self.emit("format ELF64")
@@ -40,15 +41,19 @@ class Ctx:
         self.emit("extrn outchar")
         self.emit("extrn print")
         self.emit("extrn create_object")
-        self.emit("extrn ref_inc")
-        self.emit("extrn ref_dec")
-        self.emit("extrn deref_object")
+        self.emit("extrn inc_object")
+        self.emit("extrn dec_object")
+        self.emit("extrn dec_unwrap_object")
+
+        self.emit("extrn debug_get_obj_count")
 
         self.emit("section '.text' executable")
         self.emit("_start:")
         self.emit("call main")
+
+        self.emit("call debug_get_obj_count")
+        self.emit("mov rdi, rax")
         self.emit("mov rax, 60")
-        self.emit("mov rdi, 0")
         self.emit("syscall")
 
 

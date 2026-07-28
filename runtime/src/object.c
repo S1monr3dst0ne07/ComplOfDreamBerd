@@ -1,7 +1,6 @@
 #ifndef _G_OBJECT
 #define _G_OBJECT
 
-
 #include <stdint.h>
 #include <platform.c>
 
@@ -47,22 +46,35 @@ void delete_object(object_t obj)
     obj_count--;
 }
 
-void* deref_object(object_t obj)
+void* unwrap_object(object_t obj)
 {
     return obj->data;
 }
 
-void ref_inc(object_t obj)
+
+void inc_object(object_t obj)
 {
     obj->ref++;
 }
-void ref_dec(object_t obj)
+void dec_object(object_t obj)
 {
     obj->ref--;
     if (obj->ref == 0) 
         delete_object(obj);
 }
 
+void* dec_unwrap_object(object_t obj)
+{
+    void* data = obj->data;
+    dec_object(obj);
+    return data;
+}
+
+
+uint64_t debug_get_obj_count(void)
+{
+    return obj_count;
+}
 
 
 

@@ -110,9 +110,9 @@ class AstScopeAccess:
     def _compile_var(self, ctx):
         # a new value reference is created
         addr = ctx.scope[self.iden]
-        ctx.emit(f"mov rdi, [vars + {addr}*8]")
+        ctx.emit(f"mov rdi, [vars + {addr}]")
         ctx.emit("push rdi")
-        ctx.emit("call ref_inc")
+        ctx.emit("call inc_object")
         ctx.emit("pop rax")
 
     def compile(self, ctx):
@@ -372,11 +372,11 @@ class AstExpr:
         print(self)
         self.right.compile(ctx)
         ctx.emit("mov rdi, rax")
-        ctx.emit("call deref_object")
+        ctx.emit("call dec_unwrap_object")
         ctx.emit("push rax")
         self.left.compile(ctx)
         ctx.emit("mov rdi, rax")
-        ctx.emit("call deref_object")
+        ctx.emit("call dec_unwrap_object")
         ctx.emit("pop rbx")
 
 
@@ -480,11 +480,16 @@ class AstBlock:
 
     def infer(self): pass
 
-    def compile(self, ctx):
+    def compile(self, ctx, gc_drop_scope=False):
         for stmt in self.stmts:
             stmt.compile(ctx)
 
-
+        # if the block splits scope on start,
+        # it must ref dec on scope exit.
+        if gc_drop_scope:
+            for addr in ctx.scope.values():
+                ctx.emit(f"mov rdi, [vars + {addr}]")
+                ctx.emit("call dec_object")
 
 @dc
 class AstClass:
@@ -549,7 +554,7 @@ class AstDecl:
         addr = ctx.alloc(self.name)
 
         self.expr.compile(ctx)
-        ctx.emit(f"mov [vars + {addr}*8], rax")
+        ctx.emit(f"mov [vars + {addr}], rax")
         
         ctx.scope[self.name] = addr
 
@@ -736,7 +741,7 @@ class AstProg:
         
         ctx.header()
         ctx.emit("main:") #BAD BAD GET RID OF THIS
-        self.body.compile(ctx)
+        self.body.compile(ctx, gc_drop_scope=True)
         ctx.emit("ret")
         ctx.finalize()
 

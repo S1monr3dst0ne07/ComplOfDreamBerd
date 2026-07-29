@@ -8,7 +8,8 @@ run: build
 build: runtime
 	python3 src/main.py prg/hello.db
 	fasm build.asm build.o
-	ld build.o runtime/build.o -o main
+	ld build.o runtime/build.o -o main \
+		-z noexecstack
 
 runtime:
 	make -C runtime/

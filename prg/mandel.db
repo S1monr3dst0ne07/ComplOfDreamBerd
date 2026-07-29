@@ -103,9 +103,9 @@ fn main()
     const const H = 30!
     const const W = 60!
     const const x_min = -3!
-    const const y_min = -1.2!
+    const const y_min = -12/10!
     const const x_max = 1!
-    const const y_max = 1.2!
+    const const y_max = 12/10!
 
     const var matrix = []!
     const var ref_matrix = []!

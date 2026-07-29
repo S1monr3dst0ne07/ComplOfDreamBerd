@@ -1,12 +1,12 @@
 
 
-TARGET=prg/hello.db
+TARGET=prg/test.db
 
 run: build
 	./main
 
 build: runtime
-	python3 src/main.py prg/hello.db
+	python3 src/main.py $(TARGET)
 	fasm build.asm build.o
 	ld build.o runtime/build.o -o main \
 		-z noexecstack

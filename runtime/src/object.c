@@ -31,6 +31,7 @@ void obj_del(object_t obj)
 {
     switch (obj->kind)
     {
+        case KIND_UNDEFINED:
         case KIND_INT:
             free(obj);
             break;
@@ -52,13 +53,21 @@ void* obj_unwrap(object_t obj)
 
 void obj_inc(object_t obj)
 {
-    obj->ref++;
+    if (obj)
+        obj->ref++;
+    else
+        debug("obj_inc NULL\n");
 }
 void obj_dec(object_t obj)
 {
-    obj->ref--;
-    if (obj->ref == 0) 
-        obj_del(obj);
+    if (obj)
+    {
+        obj->ref--;
+        if (obj->ref == 0) 
+            obj_del(obj);
+    }
+    else
+        debug("obj_dec NULL\n");
 }
 
 void* obj_dec_unwrap(object_t obj)

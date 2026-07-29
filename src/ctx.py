@@ -16,16 +16,33 @@ class Scope:
     vars  : dict[str, int] = field(default_factory=lambda: {})
     alloc : int = 0
 
+    return_label : str = ""
+
     def drop(self, ctx):
         for addr in self.vars.values():
-            ctx.emit(f"mov rdi, [vars + {addr}]")
+            ctx.emit(f"mov rdi, [vars + {addr*WORD_SIZE}]")
             ctx.emit("call obj_dec")
 
     def new(self, name):
         if name not in self.vars:
             self.vars[name] = self.alloc
             self.alloc += 1
+        return self.get(name)
+
+    def get(self, name):
+        if name not in self.vars:
+            error.error(f"Variable `{name}` not declared.")
         return self.vars[name] * WORD_SIZE
+
+    def save(self, ctx):
+        for i in range(self.alloc):
+            addr = i
+            ctx.emit(f"push qword [vars + {addr}]")
+
+    def restore(self, ctx):
+        for i in range(self.alloc):
+            addr = self.alloc - (i + 1)
+            ctx.emit(f"pop qword [vars + {addr}]")
 
 @dc
 class Ctx:

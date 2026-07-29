@@ -5,7 +5,7 @@
 #include <ht.h>
 
 
-void print(object_t obj)
+object_t print(object_t obj)
 {
     // refernces always goes out of scope
     obj_dec(obj);
@@ -24,7 +24,9 @@ void print(object_t obj)
             break;
             
     }
-    
+
+
+    return obj_create(KIND_UNDEFINED, 0);
 }
 
 

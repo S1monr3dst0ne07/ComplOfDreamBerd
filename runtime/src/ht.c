@@ -144,7 +144,7 @@ ht_entry* ht_next(hti* it)
 }
 
 ht_entry* ht_count(hti* it)
-    // assume keys are all KIND_INT. //or KINT_FLOAT
+    // assume keys are all KIND_INT.
     // count to smallest key bigger than the current one.
     // in effect, count through the ht.
     // used to implemented arrays and strings.

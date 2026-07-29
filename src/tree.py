@@ -96,6 +96,8 @@ class AstScopeAccess:
         return [self.iden] + [x.vars() for x in self.params]
 
     def _compile_call(self, ctx):
+        ctx.scope.save(ctx)
+
         #load paramters
         for param in self.params[::-1]:
             param.compile(ctx)
@@ -106,10 +108,11 @@ class AstScopeAccess:
             ctx.emit(f"pop {reg}")
 
         ctx.emit(f"call {self.iden}")
+        ctx.scope.restore(ctx)
 
     def _compile_var(self, ctx):
         # a new value reference is created
-        addr = ctx.scope.vars[self.iden]
+        addr = ctx.scope.get(self.iden)
         ctx.emit(f"mov rdi, [vars + {addr}]")
         ctx.emit("push rdi")
         ctx.emit("call obj_inc")
@@ -126,7 +129,7 @@ class AstScopeAccess:
         if self.iden not in ctx.scope.vars:
             error.error(f"Storing into undeclared variable `{self.iden}`")
 
-        addr = ctx.scope.vars[self.iden]
+        addr = ctx.scope.get(self.iden)
         ctx.emit(f"push qword [vars + {addr}]")
         ctx.emit(f"mov [vars + {addr}], rax")
         ctx.emit(f"pop rdi")
@@ -136,35 +139,17 @@ class AstScopeAccess:
 
 @dc
 class AstLitArray:
-    elems : list["AstExpr"]
-
-    def order(self):
-        for i, elem in enumerate(self.elems):
-            self.elems[i] = elem.order()
-
-    @classmethod
-    def parse(cls, stream):
-        stream.expect('[') #]
-        elems = []
-
-        while stream.peek() != ']':
-            elems.append(AstExpr.parse(stream))
-            if stream.peek() == ',':
-                stream.expect(',')
+    @staticmethod
+    def parse(stream):
+        stream.expect('[')
         stream.expect(']')
-
-        return cls(elems)
 
 @dc
 class AstLitDict:
-    def order(self): pass
-
-    @classmethod
-    def parse(cls, stream):
+    @staticmethod
+    def parse(stream):
         stream.expect("{")
         stream.expect("}")
-
-        return cls()
 
 @dc
 class AstIndexAccess:
@@ -190,7 +175,6 @@ class AstLeaf:
     kind : int # binding.KIND
     value : typing.Any
 
-    def infer(self): pass
     def order(self):
         if self.kind in ('scope', 'index'):
             self.value.order()
@@ -230,10 +214,13 @@ class AstLeaf:
                 content = cls._parse_string(stream)
                 return cls(binding.KIND.STRING, content)
                 
-            case 'arrayopen': pass
-                #value = AstLitArray.parse(stream)
-            case 'blockopen': pass
-                #value = AstLitDict.parse(stream)
+            case 'arrayopen':
+                AstLitArray.parse(stream)
+                return cls(binding.KIND.ARRAY, 0)
+
+            case 'blockopen':
+                AstLitDict.parse(stream)
+                return cls(binding.KIND.DICT, 0)
 
             case 'iden' | 'sym': 
                 if stream.lookhead(2)[1].kind == 'arrayopen':
@@ -271,6 +258,10 @@ class AstLeaf:
             case 'scope':
                 self.value.compile(ctx)
 
+            case binding.KIND.DICT:
+                ctx.emit("call ht_create")
+                self._create_object(ctx)
+
             case x: print("todo impl leaf kind: ", self.kind)
 
 
@@ -282,7 +273,6 @@ class AstUn:
     def order(self): 
         return self
 
-    def infer(self): pass
 
     @classmethod
     def parse(cls, stream):
@@ -326,7 +316,6 @@ class AstExpr:
         return other if other[0].space > self.space else (self, parent)
 
 
-    def infer(self): pass
     def order(self):
         # after parsing, the expression tree is maximally unballanced,
         # meaning it looks like this:
@@ -409,8 +398,6 @@ class AstIf:
     def order(self): 
         self.cond = self.cond.order()
         self.body.order()
-    def infer(self):
-        self.body.infer()
 
     @classmethod
     def parse(cls, stream):
@@ -438,8 +425,6 @@ class AstWhen:
     def order(self): 
         self.cond = self.cond.order()
         self.body.order()
-    def infer(self):
-        self.body.infer()
 
     @classmethod
     def parse(cls, stream):
@@ -486,8 +471,6 @@ class AstBlock:
         for stmt in self.stmts:
             stmt.order()
 
-    def infer(self): pass
-
     def compile(self, ctx):
         for stmt in self.stmts:
             stmt.compile(ctx)
@@ -499,7 +482,6 @@ class AstDecl:
     expr : AstExpr
 
     def order(self): self.expr = self.expr.order()
-    def infer(self): pass
 
     @classmethod
     def parse(cls, stream):
@@ -527,12 +509,9 @@ class AstDecl:
         if self.name in ctx.scope.vars:
             error.error("Variable `{self.name}` declared multiple times.")
 
-        addr = ctx.scope.new(self.name)
-
         self.expr.compile(ctx)
+        addr = ctx.scope.new(self.name)
         ctx.emit(f"mov [vars + {addr}], rax")
-        
-        ctx.scope.vars[self.name] = addr
 
 
 
@@ -547,8 +526,6 @@ class AstAssign:
     def order(self): 
         self.dst.order()
         self.src = self.src.order()
-
-    def infer(self): pass
 
     @classmethod
     def parse(cls, stream):
@@ -586,9 +563,6 @@ class AstFuncDef:
         if type(self.body) is AstExpr:
             self.body = new
 
-    def infer(self):
-        self.body.infer()
-
     @classmethod
     def parse(cls, stream):
         stream.pop()
@@ -612,17 +586,62 @@ class AstFuncDef:
     def compile(self, ctx):
         ctx.emit(f"{self.name}:")
 
-        if (self.params):
-            print("IMPL FNDEF PARAMS")
-
         ctx.push_scope()
-        self.body.compile(ctx)
-        ctx.pop_scope()
+        for i, param_name in enumerate(self.params):
+            addr = ctx.scope.new(param_name)
+            reg = binding.ABI[i]
+            ctx.emit(f"mov [vars + {addr}], {reg}")
 
+        ctx.scope.return_label = ctx.fresh()
+
+        ctx.emit("; body start")
+        self.body.compile(ctx)
+        ctx.emit("; body end")
+
+        ctx.emit("xor rax, rax")
+        ctx.emit(f"{ctx.scope.return_label}:")
+        ctx.emit("push rax")
+        ctx.pop_scope()
+        ctx.emit("pop rax")
         ctx.emit("ret")
 
 
+@dc
+class AstInline:
+    expr : AstExpr
 
+    @classmethod
+    def parse(cls, stream):
+        return cls(AstExpr.parse(stream))
+
+    def order(self):
+        self.expr.order()
+
+    def compile(self, ctx):
+        self.expr.compile(ctx)
+
+        # inline expression need to 
+        # drop their return objects.
+        # otherwise memory leak.
+
+        ctx.emit("mov rdi, rax")
+        ctx.emit("call obj_dec")
+
+@dc
+class AstReturn:
+    expr : AstExpr
+
+    @classmethod
+    def parse(cls, stream):
+        stream.expect('return')
+        return cls(AstExpr.parse(stream))
+
+    def order(self):
+        self.expr.order()
+
+    def compile(self, ctx):
+        self.expr.compile(ctx)
+        ctx.emit(f"jmp {ctx.scope.return_label}")
 
 @dc
 class AstStmt:
@@ -641,7 +660,6 @@ class AstStmt:
         return False
             
 
-    def infer(self): self.sub.infer()
     def order(self): self.sub.order()
 
     @classmethod
@@ -663,6 +681,8 @@ class AstStmt:
             case 'when', _:
                 sub = AstWhen.parse(stream)
                 need_eos = type(sub) is AstExpr
+            case 'return', _:
+                sub = AstReturn.parse(stream)
 
             case _, '[': #]
                 sub = AstAssign.parse_index_access(stream)
@@ -678,7 +698,7 @@ class AstStmt:
                 sub = AstDecl.parse(stream)
 
             case x: 
-                sub = AstExpr.parse(stream)
+                sub = AstInline.parse(stream)
     
         eos = None
         if need_eos:
@@ -716,7 +736,6 @@ class AstProg:
 
         body = AstBlock.parse(stream, prog=True)
         body.order()
-        body.infer()
         return cls(body)
 
 

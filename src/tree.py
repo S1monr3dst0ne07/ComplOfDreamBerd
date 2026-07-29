@@ -598,7 +598,12 @@ class AstFuncDef:
         self.body.compile(ctx)
         ctx.emit("; body end")
 
-        ctx.emit("xor rax, rax")
+        # if the function falls through,
+        # return a undefined object.
+        ctx.emit(f"mov rdi, {binding.KIND.UNDEFINED}")
+        ctx.emit(f"mov rsi, {0xDEADBEEF}")
+        ctx.emit("call obj_create")
+
         ctx.emit(f"{ctx.scope.return_label}:")
         ctx.emit("push rax")
         ctx.pop_scope()

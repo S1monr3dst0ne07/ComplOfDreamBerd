@@ -1,14 +1,14 @@
 
 
-fn complexMake(a) =>
+fn complexMake(a, b) =>
 {
-   return a!
+   a + b!
 }
 
 
 fn main() =>
 {
-   print complexMake(1)!
+   print complexMake(1, 1)!
 }
 
 

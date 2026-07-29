@@ -25,7 +25,6 @@ object_t print(object_t obj)
             
     }
 
-
     return obj_create(KIND_UNDEFINED, 0);
 }
 

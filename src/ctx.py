@@ -88,6 +88,8 @@ class Ctx:
         self.emit("section '.text' executable")
         self.emit("_start:")
         self.emit("call main")
+        self.emit("mov rdi, rax")
+        self.emit("call obj_dec")
 
         self.emit("call debug_get_obj_count")
         self.emit("mov rdi, rax")

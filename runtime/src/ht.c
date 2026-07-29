@@ -76,17 +76,17 @@ static object_t ht_set_entry(ht_entry* entries, size_t capacity, object_t key, o
     uint64_t hash = obj_hash(key);
     size_t index = (size_t)(hash & (uint64_t)(capacity - 1));
 
-    ht_entry ent;
-    while ((ent = entries[index]).key) {
-        if (obj_cmp(key, ent.key))
+    ht_entry* ent;
+    while ((ent = &entries[index])->key) {
+        if (obj_cmp(key, ent->key))
             goto key_found;
 
         if (++index >= capacity) index = 0;
     }
 
-    ent.key   = key;
+    ent->key   = key;
 key_found:
-    ent.value = value;
+    ent->value = value;
 }
 
 static bool ht_expand(ht* table)

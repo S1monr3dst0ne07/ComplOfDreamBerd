@@ -5,6 +5,7 @@
 fn main() =>
 {
    var var test = 100!
+   test = 200!
 
    print test + 100!
 }

@@ -2,7 +2,7 @@
 
 
 build.o: src/*.c
-	gcc -g -c $< -o $@ -Isrc/ \
+	gcc -g -c src/all.c -o $@ -Isrc/ \
 		-Wno-builtin-declaration-mismatch \
 		-Wno-free-nonheap-object
 

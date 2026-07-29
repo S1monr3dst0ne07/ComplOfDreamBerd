@@ -112,7 +112,7 @@ class AstScopeAccess:
         addr = ctx.scope.vars[self.iden]
         ctx.emit(f"mov rdi, [vars + {addr}]")
         ctx.emit("push rdi")
-        ctx.emit("call inc_object")
+        ctx.emit("call obj_inc")
         ctx.emit("pop rax")
 
     def compile(self, ctx):
@@ -130,7 +130,7 @@ class AstScopeAccess:
         ctx.emit(f"push qword [vars + {addr}]")
         ctx.emit(f"mov [vars + {addr}], rax")
         ctx.emit(f"pop rdi")
-        ctx.emit("call dec_object")
+        ctx.emit("call obj_dec")
 
 
 
@@ -228,7 +228,7 @@ class AstLeaf:
 
             case 'quote': 
                 content = cls._parse_string(stream)
-                return cls('string', content)
+                return cls(binding.KIND.STRING, content)
                 
             case 'arrayopen': pass
                 #value = AstLitArray.parse(stream)
@@ -253,14 +253,14 @@ class AstLeaf:
         # create actual runtime object from rax
         ctx.emit(f"mov rdi, {self.kind}")
         ctx.emit(f"mov rsi, rax")
-        ctx.emit("call create_object")
+        ctx.emit("call obj_create")
 
     def compile(self, ctx):
         match self.kind:
-            case 'string':
+            case binding.KIND.STRING:
                 label = ctx.fresh()
-                ctx.emit(f"mov rax, {label}")
-                self._create_object(ctx)
+                ctx.emit(f"mov rdi, {label}")
+                ctx.emit("call util_create_string")
 
                 ctx.strings[label] = self.value
 
@@ -381,11 +381,11 @@ class AstExpr:
     def compile(self, ctx):
         self.right.compile(ctx)
         ctx.emit("mov rdi, rax")
-        ctx.emit("call dec_unwrap_object")
+        ctx.emit("call obj_dec_unwrap")
         ctx.emit("push rax")
         self.left.compile(ctx)
         ctx.emit("mov rdi, rax")
-        ctx.emit("call dec_unwrap_object")
+        ctx.emit("call obj_dec_unwrap")
         ctx.emit("pop rbx")
 
 
@@ -397,7 +397,7 @@ class AstExpr:
 
         ctx.emit(f"mov rdi, {binding.KIND.INT}")
         ctx.emit(f"mov rsi, rax")
-        ctx.emit("call create_object")
+        ctx.emit("call obj_create")
 
 
 

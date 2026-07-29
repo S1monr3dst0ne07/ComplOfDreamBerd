@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include <platform.h>
+
 // warning: operating system stuff ahead.
 // this file contains syscall bindings
 // and a small user heap for linux.
@@ -72,7 +74,6 @@ static header_t* freeptr = NULL;
 
 #define MIN_CORE_NUMB 1024
 
-void free(void* base);
 static header_t* morecore(size_t nu)
 {
     if (nu < MIN_CORE_NUMB) nu = MIN_CORE_NUMB;

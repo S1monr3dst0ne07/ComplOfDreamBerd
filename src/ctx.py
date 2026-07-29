@@ -19,7 +19,7 @@ class Scope:
     def drop(self, ctx):
         for addr in self.vars.values():
             ctx.emit(f"mov rdi, [vars + {addr}]")
-            ctx.emit("call dec_object")
+            ctx.emit("call obj_dec")
 
     def new(self, name):
         if name not in self.vars:
@@ -58,10 +58,13 @@ class Ctx:
 
         self.emit("extrn outchar")
         self.emit("extrn print")
-        self.emit("extrn create_object")
-        self.emit("extrn inc_object")
-        self.emit("extrn dec_object")
-        self.emit("extrn dec_unwrap_object")
+
+        self.emit("extrn obj_create")
+        self.emit("extrn obj_inc")
+        self.emit("extrn obj_dec")
+        self.emit("extrn obj_dec_unwrap")
+
+        self.emit("extrn util_create_string")
 
         self.emit("extrn debug_get_obj_count")
 

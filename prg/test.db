@@ -1,10 +1,13 @@
 
 
-// var var name = "Test"!
-var var name = 100!
-var var test = name + 20!
-print test!
-print name!
+
+
+fn main() =>
+{
+   var var test = 100!
+
+   print test + 100!
+}
 
 
 

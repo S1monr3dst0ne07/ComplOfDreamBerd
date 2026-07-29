@@ -12,14 +12,38 @@ import tree
 WORD_SIZE = 8
 
 @dc
+class Scope:
+    vars  : dict[str, int] = field(default_factory=lambda: {})
+    alloc : int = 0
+
+    def drop(self, ctx):
+        for addr in self.vars.values():
+            ctx.emit(f"mov rdi, [vars + {addr}]")
+            ctx.emit("call dec_object")
+
+    def new(self, name):
+        if name not in self.vars:
+            self.vars[name] = self.alloc
+            self.alloc += 1
+        return self.vars[name] * WORD_SIZE
+
+@dc
 class Ctx:
-    scope   : dict[str, int] = field(default_factory=lambda: {})
+    scope   : Scope          = field(default_factory=lambda: Scope())
+    stack   : list[Scope]    = field(default_factory=lambda: [])
     output  : str            = ""
 
     strings : dict[str, str] = field(default_factory=lambda: {})
 
-    _vars  : int = 0
     _fresh : int = 0
+
+    def push_scope(self):
+        self.stack.append(self.scope)
+        self.scope = Scope()
+
+    def pop_scope(self):
+        self.scope.drop(self)
+        self.scope = self.stack.pop()
 
     def emit(self, line):
         self.output += line + '\n'
@@ -27,12 +51,6 @@ class Ctx:
     def fresh(self):
         self._fresh += 1
         return f"__fresh_{self._fresh}"
-
-    def alloc(self, name):
-        if name not in self.scope:
-            self.scope[name] = self._vars
-            self._vars += 1
-        return self.scope[name] * WORD_SIZE
 
     def header(self):
         self.emit("format ELF64")

@@ -109,14 +109,14 @@ class AstScopeAccess:
 
     def _compile_var(self, ctx):
         # a new value reference is created
-        addr = ctx.scope[self.iden]
+        addr = ctx.scope.vars[self.iden]
         ctx.emit(f"mov rdi, [vars + {addr}]")
         ctx.emit("push rdi")
         ctx.emit("call inc_object")
         ctx.emit("pop rax")
 
     def compile(self, ctx):
-        if self.iden not in ctx.scope:
+        if self.iden not in ctx.scope.vars:
             self._compile_call(ctx)
 
         else:
@@ -480,41 +480,9 @@ class AstBlock:
 
     def infer(self): pass
 
-    def compile(self, ctx, gc_drop_scope=False):
+    def compile(self, ctx):
         for stmt in self.stmts:
             stmt.compile(ctx)
-
-        # if the block splits scope on start,
-        # it must ref dec on scope exit.
-        if gc_drop_scope:
-            for addr in ctx.scope.values():
-                ctx.emit(f"mov rdi, [vars + {addr}]")
-                ctx.emit("call dec_object")
-
-@dc
-class AstClass:
-    name : str
-    body : "AstBlock"
-
-    def order(self): self.body.order()
-    def infer(self): self.body.infer()
-
-    @classmethod
-    def parse(cls, stream):
-        if 'class' in deleted_features:
-            error.error("Feature `class` has been deleted.")
-
-        stream.pop() # `class` or `className`
-
-        name = stream.pop()
-        body = AstBlock.parse(stream)
-        return cls(name, body)
-
-
-
-
-
-
 
 
 @dc
@@ -548,15 +516,16 @@ class AstDecl:
 
             
     def compile(self, ctx):
-        if self.name in ctx.scope:
+        if self.name in ctx.scope.vars:
             error.error("Variable `{self.name}` declared multiple times.")
 
-        addr = ctx.alloc(self.name)
+
+        addr = ctx.scope.new(self.name)
 
         self.expr.compile(ctx)
         ctx.emit(f"mov [vars + {addr}], rax")
         
-        ctx.scope[self.name] = addr
+        ctx.scope.vars[self.name] = addr
 
 
 
@@ -611,9 +580,6 @@ class AstFuncDef:
 
     @classmethod
     def parse(cls, stream):
-        if 'function' in deleted_features:
-            error.error("Functions have been deleted.")
-
         stream.pop()
         name = stream.pop()
 
@@ -632,6 +598,17 @@ class AstFuncDef:
 
         return cls(name, params, body)
 
+    def compile(self, ctx):
+        ctx.emit(f"{self.name}:")
+
+        if (self.params):
+            print("IMPL FNDEF PARAMS")
+
+        ctx.push_scope()
+        self.body.compile(ctx)
+        ctx.pop_scope()
+
+        ctx.emit("ret")
 
 
 
@@ -675,10 +652,6 @@ class AstStmt:
             case 'when', _:
                 sub = AstWhen.parse(stream)
                 need_eos = type(sub) is AstExpr
-
-            case ('class', _) | ('className', _):
-                sub = AstClass.parse(stream)
-                need_eos = False
 
             case _, '[': #]
                 sub = AstAssign.parse_index_access(stream)
@@ -740,9 +713,7 @@ class AstProg:
         ctx = Ctx()
         
         ctx.header()
-        ctx.emit("main:") #BAD BAD GET RID OF THIS
-        self.body.compile(ctx, gc_drop_scope=True)
-        ctx.emit("ret")
+        self.body.compile(ctx)
         ctx.finalize()
 
         return ctx.output

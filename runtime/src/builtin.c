@@ -20,6 +20,7 @@ void print(object_t obj)
             ht_entry* ent;
             while ((ent = ht_count(&iter)))
                 outchar((char)(uint64_t)ent->value->data);
+            outchar('\n');
             break;
             
     }

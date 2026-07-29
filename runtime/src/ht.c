@@ -5,6 +5,7 @@
 #include <stdbool.h>
 
 #include <ht.h>
+#include <util.h>
 
 #define INITIAL_CAPACITY 16  // must not be zero
 
@@ -158,18 +159,22 @@ ht_entry* ht_count(hti* it)
     for (size_t i = 0; i < table->capacity; i++)
     {
         ht_entry* ent = &table->entries[i];
+        if (!ent->key) continue;
 
         if (ent->key->kind != KIND_INT) continue;
-        uint64_t value = VALUE(ent);
+        int64_t value = VALUE(ent);
 
-        if (value < it->index) continue;
+        // value must strictly be bigger.
+        if (value <= it->index) continue;
 
         if (!best || VALUE(best) > value)
             best = ent;
     }
 
+    if (best)
+        it->index = VALUE(best);
 
-    it->index = VALUE(best);
+
     return best;    
 }
 

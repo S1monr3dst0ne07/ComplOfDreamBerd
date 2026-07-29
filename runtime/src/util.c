@@ -38,6 +38,7 @@ char* single_int_to_string(uint64_t x)
     #define WRITE(c) (*(--iter)) = c
 
     WRITE('\0');
+    if (!x) WRITE('0');
     while (x)
     {
         WRITE((x % 10) + '0');

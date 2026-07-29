@@ -118,42 +118,64 @@ void ht_set(ht* table, object_t key, object_t value)
 }
 
 
-/*
-typedef struct {
-    const char* key;  // current key
-    void* value;      // current value
 
-    // Don't use these fields directly.
-    ht* _table;       // reference to hash table being iterated
-    size_t _index;    // current index into ht._entries
-} hti;
-
-
-hti ht_iterator(ht* table) {
-    hti it;
-    it._table = table;
-    it._index = 0;
-    return it;
+hti ht_iterator(ht* table) 
+{
+    return (hti) {
+        .table = table,
+        .index = -1,
+    };
 }
 
-bool ht_next(hti* it) {
-    // Loop till we've hit end of entries array.
-    ht* table = it->_table;
-    while (it->_index < table->capacity) {
-        size_t i = it->_index;
-        it->_index++;
-        if (table->entries[i].key != NULL) {
-            // Found next non-empty item, update iterator key and value.
-            ht_entry entry = table->entries[i];
-            it->key = entry.key;
-            it->value = entry.value;
-            return true;
-        }
+ht_entry* ht_next(hti* it) 
+{
+    if (it->index == -1) it->index = 0;
+
+    ht* table = it->table;
+
+    while (it->index < table->capacity) 
+    {
+        ht_entry* ent = &table->entries[it->index++];
+        if (ent->key) return ent;
     }
-    return false;
+
+    return NULL;
 }
 
-*/
+ht_entry* ht_count(hti* it)
+    // assume keys are all KIND_INT. //or KINT_FLOAT
+    // count to smallest key bigger than the current one.
+    // in effect, count through the ht.
+    // used to implemented arrays and strings.
+{
+    if (it->index == -1) it->index = INT64_MIN;
+    ht* table = it->table;
+
+    #define VALUE(ent) ((uint64_t)(ent)->key->data)
+
+    // find smallest bigger than it->index
+    ht_entry* best = NULL;
+    for (size_t i = 0; i < table->capacity; i++)
+    {
+        ht_entry* ent = &table->entries[i];
+
+        if (ent->key->kind != KIND_INT) continue;
+        uint64_t value = VALUE(ent);
+
+        if (value < it->index) continue;
+
+        if (!best || VALUE(best) > value)
+            best = ent;
+    }
+
+
+    it->index = VALUE(best);
+    return best;    
+}
+
+
+
+
 
 
 #endif

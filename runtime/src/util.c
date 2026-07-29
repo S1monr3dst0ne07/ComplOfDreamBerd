@@ -19,8 +19,32 @@ object_t util_create_string(const char* ptr)
 
 void debug(const char* msg)
 {
+    putstr(msg);
+}
+
+void putstr(const char* msg)
+{
     while (*msg)
         outchar(*msg++);
+    outchar('\n');
+}
+
+
+char* single_int_to_string(uint64_t x)
+{
+    static char buffer[64];
+    char* iter = buffer + sizeof(buffer);
+
+    #define WRITE(c) (*(--iter)) = c
+
+    WRITE('\0');
+    while (x)
+    {
+        WRITE((x % 10) + '0');
+        x = x / 10;
+    }
+
+    return iter;
 }
 
 

@@ -94,6 +94,8 @@ bool obj_cmp(object_t a, object_t b)
 
     switch (a->kind)
     {
+        case KIND_INT: return a->data == b->data;
+
         default:
             debug("TOOD: implement obj_cmp\n");
             break;

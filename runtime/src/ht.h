@@ -19,4 +19,18 @@ void ht_del(ht* table);
 void* ht_get(ht* table, object_t key);
 void ht_set(ht* table, object_t key, object_t value);
 
+
+typedef struct {
+    ht*     table; 
+    int64_t index; 
+        // current index into ht->entries.
+        // -1 for uninited.
+} hti;
+
+
+hti       ht_iterator(ht* table);
+ht_entry* ht_next(hti* it);
+ht_entry* ht_count(hti* it);
+
+
 #endif

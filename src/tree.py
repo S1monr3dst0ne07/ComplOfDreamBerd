@@ -122,6 +122,16 @@ class AstScopeAccess:
         else:
             self._compile_var(ctx)
 
+    def store(self, ctx):
+        if self.iden not in ctx.scope.vars:
+            error.error(f"Storing into undeclared variable `{self.iden}`")
+
+        addr = ctx.scope.vars[self.iden]
+        ctx.emit(f"push qword [vars + {addr}]")
+        ctx.emit(f"mov [vars + {addr}], rax")
+        ctx.emit(f"pop rdi")
+        ctx.emit("call dec_object")
+
 
 
 @dc
@@ -369,7 +379,6 @@ class AstExpr:
         return self.left.vars() + self.right.vars()
 
     def compile(self, ctx):
-        print(self)
         self.right.compile(ctx)
         ctx.emit("mov rdi, rax")
         ctx.emit("call dec_unwrap_object")
@@ -389,7 +398,6 @@ class AstExpr:
         ctx.emit(f"mov rdi, {binding.KIND.INT}")
         ctx.emit(f"mov rsi, rax")
         ctx.emit("call create_object")
-
 
 
 
@@ -519,7 +527,6 @@ class AstDecl:
         if self.name in ctx.scope.vars:
             error.error("Variable `{self.name}` declared multiple times.")
 
-
         addr = ctx.scope.new(self.name)
 
         self.expr.compile(ctx)
@@ -563,6 +570,10 @@ class AstAssign:
         src = AstExpr.parse(stream)
 
         return cls(dst, src)
+
+    def compile(self, ctx):
+        self.src.compile(ctx)
+        self.dst.store(ctx)
 
 @dc
 class AstFuncDef:

@@ -12,6 +12,9 @@ object_t _print(object_t obj)
     ht_entry* ent;
     switch (obj->kind)
     {
+        case KIND_UNDEFINED:
+            putstr("undefined");
+            break;
         case KIND_INT:
             putstr(single_int_to_string((uint64_t)obj->data));
             break;
@@ -48,6 +51,12 @@ object_t print(object_t obj)
     // refernces always goes out of scope
     obj_dec(obj);
 
+    return obj_create(KIND_UNDEFINED, 0);
+}
+
+
+object_t undefined()
+{
     return obj_create(KIND_UNDEFINED, 0);
 }
 

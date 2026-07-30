@@ -55,10 +55,22 @@ char* single_int_to_string(uint64_t x)
     return iter;
 }
 
+static bool _is_container(object_t x)
+{
+    switch (x->kind)
+    {
+        case KIND_DICT:
+        case KIND_STRING:
+            return true;
+        default:
+            return false;
+    }
+}
+
 
 void util_set_ht(object_t table_obj, object_t key, object_t value)
 {
-    if (table_obj->kind != KIND_DICT) 
+    if (!_is_container(table_obj))
         goto not_a_table;
     ht* table = table_obj->data;
 
@@ -69,7 +81,7 @@ not_a_table:
 }
 object_t util_get_ht(object_t table_obj, object_t key)
 {
-    if (table_obj->kind != KIND_DICT) 
+    if (!_is_container(table_obj))
         goto not_a_table;
     ht* table = table_obj->data;
 
@@ -84,6 +96,35 @@ not_a_table:
     return obj_create(KIND_UNDEFINED, 0);
 }
 
+
+enum op_kind_e
+{
+    OP_PLUS = 1,
+    OP_MINUS,
+    OP_TIMES,
+    OP_EQUAL,
+    OP_INEQUAL,
+};
+
+object_t util_operate(object_t a, object_t b, enum op_kind_e op)
+{
+    #define VAL(x) ((uint64_t)x->data)
+    #define obj_create_cast(kind, x) (obj_create(kind, (void*)(x)))
+
+    object_t ret;
+    switch (op)
+    {
+        case OP_PLUS:    ret = obj_create_cast(KIND_INT, VAL(a) + VAL(b)); break;
+        case OP_MINUS:   ret = obj_create_cast(KIND_INT, VAL(a) - VAL(b)); break;
+        case OP_TIMES:   ret = obj_create_cast(KIND_INT, VAL(a) * VAL(b)); break;
+        case OP_EQUAL:   ret = obj_create_cast(KIND_INT, obj_cmp(a, b)); break;
+        case OP_INEQUAL: ret = obj_create_cast(KIND_INT, (uint64_t)!obj_cmp(a, b)); break;
+    }
+
+    obj_dec(a);
+    obj_dec(b);
+    return ret;
+}
 
 
 

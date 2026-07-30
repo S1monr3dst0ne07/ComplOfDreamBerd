@@ -65,8 +65,8 @@ void obj_dec(object_t obj)
     if (obj)
     {
         obj->ref--;
-        if (obj->ref == 0) 
-            obj_del(obj);
+        if (obj->ref == 0);
+            //obj_del(obj); TODO: fix this
     }
     else
         debug("obj_dec NULL\n");
@@ -97,6 +97,7 @@ uint64_t obj_hash(object_t obj)
             
         default:
             debug("TOOD: implement obj_hash\n");
+            debug(single_int_to_string(obj->kind));
             break;
     }
     return 0;
@@ -108,6 +109,7 @@ bool obj_cmp(object_t a, object_t b)
 
     switch (a->kind)
     {
+        case KIND_UNDEFINED: return true;
         case KIND_INT: return a->data == b->data;
         case KIND_DICT:
         case KIND_STRING:

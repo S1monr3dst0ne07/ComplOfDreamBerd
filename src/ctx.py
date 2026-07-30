@@ -75,10 +75,12 @@ class Ctx:
 
         self.emit("extrn outchar")
         self.emit("extrn print")
+        self.emit("extrn undefined")
 
         self.emit("extrn obj_create")
         self.emit("extrn obj_inc")
         self.emit("extrn obj_dec")
+        self.emit("extrn obj_cmp")
         self.emit("extrn obj_dec_unwrap")
 
         self.emit("extrn ht_create")
@@ -86,6 +88,7 @@ class Ctx:
         self.emit("extrn util_create_string")
         self.emit("extrn util_set_ht")
         self.emit("extrn util_get_ht")
+        self.emit("extrn util_operate")
 
         self.emit("extrn debug_get_obj_count")
 
@@ -95,8 +98,9 @@ class Ctx:
         self.emit("mov rdi, rax")
         self.emit("call obj_dec")
 
-        self.emit("call debug_get_obj_count")
-        self.emit("mov rdi, rax")
+        #self.emit("call debug_get_obj_count")
+        #self.emit("mov rdi, rax")
+        self.emit("mov rdi, 0")
         self.emit("mov rax, 60")
         self.emit("syscall")
 

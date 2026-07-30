@@ -392,26 +392,22 @@ class AstExpr:
 
     def compile(self, ctx):
         self.right.compile(ctx)
-        ctx.emit("mov rdi, rax")
-        ctx.emit("call obj_dec_unwrap")
         ctx.emit("push rax")
         self.left.compile(ctx)
-        ctx.emit("mov rdi, rax")
-        ctx.emit("call obj_dec_unwrap")
-        ctx.emit("pop rbx")
-
+        ctx.emit("mov rsi, rax")
+        ctx.emit("pop rdi")
 
         match self.op:
-            case '+': ctx.emit('add rax, rbx')
-            case '-': ctx.emit('sub rax, rbx')
-            case '*': ctx.emit('mul rbx')
+            case '+':   kind = binding.OP.PLUS
+            case '-':   kind = binding.OP.MINUS
+            case '*':   kind = binding.OP.TIMES
+            case '===': kind = binding.OP.EQUAL
+            case ';==': kind = binding.OP.INEQUAL
 
             case x: print(f"impl op: {x}")
 
-
-        ctx.emit(f"mov rdi, {binding.KIND.INT}")
-        ctx.emit(f"mov rsi, rax")
-        ctx.emit("call obj_create")
+        ctx.emit(f"mov rdx, {kind}")
+        ctx.emit("call util_operate")
 
 
 
@@ -426,21 +422,23 @@ class AstIf:
 
     @classmethod
     def parse(cls, stream):
-        if 'if' in deleted_features:
-            error.error("Feature `if` has been deleted.")
-
         stream.expect('if')
         cond = AstExpr.parse(stream)
         body = AstStmt.parse(stream)
         return cls(cond, body)
 
-    def run(self, ctx):
-        cond = self.cond.run(ctx).content
-        if cond not in (True, False):
-            error.error(f"Indecisive condition: `{cond.render()}`")
+    def compile(self, ctx):
+        skip_label = ctx.fresh()
 
-        if cond:
-            self.body.run(ctx)
+        self.cond.compile(ctx)
+        ctx.emit("mov rdi, rax")
+        ctx.emit("call obj_dec_unwrap")
+        ctx.emit("cmp rax, 0")
+        ctx.emit(f"je {skip_label}")
+
+        self.body.compile(ctx)
+
+        ctx.emit(f"{skip_label}:")
 
 @dc
 class AstWhen:

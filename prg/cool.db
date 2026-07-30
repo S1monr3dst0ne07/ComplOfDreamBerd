@@ -1,0 +1,93 @@
+
+
+fn kindNone()  => "none"
+fn kindSpace() => "space"
+fn kindNum()   => "number"
+fn kindAdd()   => "add"
+fn kindSub()   => "sub"
+fn kindMul()   => "mul"
+fn kindOpen()  => "open"
+fn kindClose() => "close"
+
+
+
+fn getKind(char) => {
+   if char === 32 return kindSpace!
+
+   if char === 48 return kindNum!
+   if char === 49 return kindNum!
+   if char === 50 return kindNum!
+   if char === 51 return kindNum!
+   if char === 52 return kindNum!
+   if char === 53 return kindNum!
+   if char === 54 return kindNum!
+   if char === 55 return kindNum!
+   if char === 56 return kindNum!
+   if char === 57 return kindNum!
+
+   if char === 43 return kindAdd!
+   if char === 45 return kindSub!
+   if char === 42 return kindMul!
+
+   if char === 40 return kindOpen!
+   if char === 41 return kindClose!
+}
+
+
+
+fn lexInternal(state) => {
+   var var source = state["source"]!
+   var var index  = state["source index"]!
+   var var char = source[index]!
+
+   state["source index"] = index + 1!
+
+   if state["last kind"] ;== undefined {
+      var var kind = getKind char!
+
+      if state["last kind"] ;== kind {
+         if state["last kind"] ;== 'space' {
+            index = state["token index"]!
+            var var tokens = state["token"]!
+            tokens[index] = state["buffer"]!
+            state["token index"] = index + 1!
+         }
+         state["buffer"] = ' '!
+      }
+
+      var var buffer = state["buffer"]!
+      index = state["buffer index"]!
+      buffer[index] = char!
+      state["buffer index"] = index + 1!
+
+      state["last kind"] = kind!
+      lexInternal(state)!
+   }
+}
+
+fn lex(src) => {
+   var var state = {}!
+   state["last kind"] = kindNone!
+
+   state["source"] = src!
+   state["source index"] = 0!
+
+   state["token"] = {}!
+   state["token index"] = 0!
+
+   state["buffer"] = " "!
+   state["buffer index"] = 0!
+
+   lexInternal(state)!
+   return state["token"]!
+}
+
+
+fn main() => {
+   var var src = "7 + 13"!
+   var var tokens = lex(src)!
+   print tokens!
+}
+
+
+

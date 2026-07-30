@@ -1,0 +1,6 @@
+
+
+fn main() => {
+   var var string = "hello"!
+   print string[0]!
+}

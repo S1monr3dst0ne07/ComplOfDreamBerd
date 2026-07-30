@@ -13,6 +13,15 @@ class KIND:
     FRAC   = 5
 
 
+class OP:
+    PLUS  = 1
+    MINUS = 2
+    TIMES = 3
+
+    EQUAL   = 4
+    INEQUAL = 5
+
+
 
 
 

@@ -71,9 +71,13 @@ static object_t ht_set_entry(ht_entry* entries, size_t capacity, object_t key, o
     }
 
     if (plength)
+    {
         // if the key is new,
         // a new reference is created by registering it.
         obj_inc(key);
+
+        (*plength)++;
+    }
 
     ent->key   = key;
 key_found:

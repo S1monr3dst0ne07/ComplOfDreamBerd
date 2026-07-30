@@ -29,8 +29,8 @@ fn getKind(char) => {
    if char === 45 return kindSub!
    if char === 42 return kindMul!
 
-   if char === 40 return kindOpen!
-   if char === 41 return kindClose!
+   if char === 91 return kindOpen!
+   if char === 93 return kindClose!
 }
 
 
@@ -47,12 +47,15 @@ fn lexInternal(state) => {
 
       if state["last kind"] ;== kind {
          if state["last kind"] ;== 'space' {
-            index = state["token index"]!
-            var var tokens = state["token"]!
-            tokens[index] = state["buffer"]!
-            state["token index"] = index + 1!
+            if state["last kind"] ;== 'none' {
+               index = state["token index"]!
+               var var tokens = state["token"]!
+               tokens[index] = state["buffer"]!
+               state["token index"] = index + 1!
+            }
          }
          state["buffer"] = ' '!
+         state["buffer index"] = 0!
       }
 
       var var buffer = state["buffer"]!
@@ -79,14 +82,103 @@ fn lex(src) => {
    state["buffer index"] = 0!
 
    lexInternal(state)!
-   return state["token"]!
+
+   var var stream = {}!
+   stream["tokens"] = state["token"]!
+   stream["index"]  = 0!
+   return stream!
+}
+
+fn next(stream) => {
+   var var index = stream["index"]!
+   var var tokens = stream["tokens"]!
+   var var token  = tokens[index]!
+   stream["index"] = index + 1!
+   return token!
+}
+fn peek(stream) => {
+   var var index = stream["index"]!
+   var var tokens = stream["tokens"]!
+   var var token  = tokens[index]!
+   return token!
 }
 
 
+fn strToInt(str, index) => {
+   var var digit = str[index] - 48!
+
+   if str[index+1] === undefined {
+      return digit!
+   }
+
+   return digit*10    +    strToInt(str, index+1)!
+}
+
+
+fn parseLeaf(stream) => {
+   var var tok = next(stream)!
+   if tok === "[" {
+      var var sub = parseExpr(stream)!
+      next(stream)!
+      return sub!
+   }
+
+   var var node = {}!
+   node["type"] = "leaf"!
+   node["content"] = strToInt(tok, 0)!
+   return node!
+}
+
+
+fn isNotOper(tok) => {
+   if tok === "+" return 0!
+   if tok === "-" return 0!
+   if tok === "*" return 0!
+   return 1!
+}
+
+fn parseExpr(stream) => {
+   var var left = parseLeaf(stream)!
+
+   if isNotOper(peek(stream)) {
+      return left! 
+   }
+
+   var var op = next(stream)!
+   var var right = parseExpr(stream)!
+   var var node = {}!
+   node["type"] = "expr"!
+   node["left"]  = left!
+   node["right"] = right!
+   node["op"]    = op!
+
+   return node!
+}
+
+fn eval(node) => {
+   var var type = node["type"]!
+
+   if type === "expr" {
+      var var lhs = eval(node["left"])!
+      var var rhs = eval(node["right"])!
+      var var op = node["op"]!
+      if op === "+" return lhs + rhs!
+      if op === "-" return lhs - rhs!
+      if op === "*" return lhs * rhs!
+   }
+   if type === "leaf" {
+      return node["content"]!
+   }
+}
+
+
+
 fn main() => {
-   var var src = "7 + 13"!
-   var var tokens = lex(src)!
-   print tokens!
+   var var src = "[3 * [13 + 7] ] - 10"!
+   var var stream = lex(src)!
+   var var root = parseExpr(stream)!
+   var var res = eval(root)!
+   print res!
 }
 
 

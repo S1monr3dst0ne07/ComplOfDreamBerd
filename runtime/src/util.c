@@ -115,7 +115,7 @@ object_t util_operate(object_t a, object_t b, enum op_kind_e op)
     switch (op)
     {
         case OP_PLUS:    ret = obj_create_cast(KIND_INT, VAL(a) + VAL(b)); break;
-        case OP_MINUS:   ret = obj_create_cast(KIND_INT, VAL(a) - VAL(b)); break;
+        case OP_MINUS:   ret = obj_create_cast(KIND_INT, VAL(b) - VAL(a)); break;
         case OP_TIMES:   ret = obj_create_cast(KIND_INT, VAL(a) * VAL(b)); break;
         case OP_EQUAL:   ret = obj_create_cast(KIND_INT, obj_cmp(a, b)); break;
         case OP_INEQUAL: ret = obj_create_cast(KIND_INT, (uint64_t)!obj_cmp(a, b)); break;

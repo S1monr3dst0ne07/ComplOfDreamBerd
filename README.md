@@ -1,18 +1,16 @@
 
 
-# ImplOfDreamBird
+# ComplOfDreamBerd
 
-This is an implementation of the DreamBird / GOM programming language.
-It tries to be as specifications compliant as possible.
-All theoretically possible features, explicitly mentioned
-in the original document, have been implemented (to my knowledge).
-There may be bugs.
+This is a compiler implementation for a *very very* small
+subset of DreamBerd. The subset does not include many
+of the joke features that would just be too much effort
+to implement in a compiled setting. That said,
+the subset that it compiles it Turing Complete though!
 
-
-
-Showcase video: [https://youtu.be/bFLKOCFf_kk](https://youtu.be/bFLKOCFf_kk)
-
-Deepdive video: [https://youtu.be/S8Q6IIKQHZ4](https://youtu.be/S8Q6IIKQHZ4)
+This implementation is very very buggy!
+Garbage collection does not work currently.
+(Send patches plz :3)
 
 
 # Notice

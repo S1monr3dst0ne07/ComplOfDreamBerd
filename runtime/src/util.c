@@ -26,7 +26,6 @@ void putstr(const char* msg)
 {
     while (*msg)
         outchar(*msg++);
-    outchar('\n');
 }
 
 
@@ -47,6 +46,16 @@ char* single_int_to_string(uint64_t x)
 
     return iter;
 }
+
+
+void util_set_ht(object_t table_obj, object_t key, object_t value)
+{
+    if (table_obj->kind != KIND_DICT) return;
+    ht* table = table_obj->data;
+
+    ht_set(table, key, value);
+}
+
 
 
 

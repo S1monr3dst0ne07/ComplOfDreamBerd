@@ -32,5 +32,7 @@ hti       ht_iterator(ht* table);
 ht_entry* ht_next(hti* it);
 ht_entry* ht_count(hti* it);
 
+uint64_t ht_hash(ht* table);
+
 
 #endif

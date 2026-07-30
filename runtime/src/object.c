@@ -36,6 +36,7 @@ void obj_del(object_t obj)
             free(obj);
             break;
         case KIND_STRING:
+        case KIND_DICT:
             ht_del(obj->data);
             break;
         default:
@@ -88,7 +89,10 @@ uint64_t obj_hash(object_t obj)
 {
     switch (obj->kind)
     {
-        case KIND_INT: return (uint64_t)obj->data;
+        case KIND_INT:  return (uint64_t)obj->data;
+        case KIND_DICT: 
+        case KIND_STRING: 
+            return ht_hash(obj->data);
             
         default:
             debug("TOOD: implement obj_hash\n");
@@ -111,6 +115,5 @@ bool obj_cmp(object_t a, object_t b)
     }
     return false;
 }
-
 
 #endif

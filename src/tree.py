@@ -153,7 +153,7 @@ class AstLitDict:
 
 @dc
 class AstIndexAccess:
-    name : str
+    name  : "str"
     index : "AstExpr"
 
     def order(self):
@@ -162,11 +162,25 @@ class AstIndexAccess:
     @classmethod
     def parse(cls, stream):
         name = stream.pop()
+
         stream.expect('[') #]
         index = AstExpr.parse(stream)
         stream.expect(']')
 
         return cls(name, index)
+
+
+    def store(self, ctx):
+        ctx.emit("; AstIndexAccess start")
+        ctx.emit("push rax")
+        self.index.compile(ctx)
+        ctx.emit(f"pop {binding.ABI[2]}") 
+        ctx.emit(f"mov {binding.ABI[1]}, rax")
+        addr = ctx.scope.get(self.name)
+        ctx.emit(f"mov {binding.ABI[0]}, [vars + {addr}]")
+        ctx.emit("call util_set_ht")
+        ctx.emit("; AstIndexAccess end")
+
 
 
 
@@ -598,11 +612,12 @@ class AstFuncDef:
         self.body.compile(ctx)
         ctx.emit("; body end")
 
-        # if the function falls through,
-        # return a undefined object.
-        ctx.emit(f"mov rdi, {binding.KIND.UNDEFINED}")
-        ctx.emit(f"mov rsi, {0xDEADBEEF}")
-        ctx.emit("call obj_create")
+        if type(self.body) is AstBlock:
+            # if the function falls through,
+            # return a undefined object.
+            ctx.emit(f"mov rdi, {binding.KIND.UNDEFINED}")
+            ctx.emit(f"mov rsi, {0xDEADBEEF}")
+            ctx.emit("call obj_create")
 
         ctx.emit(f"{ctx.scope.return_label}:")
         ctx.emit("push rax")
@@ -620,7 +635,7 @@ class AstInline:
         return cls(AstExpr.parse(stream))
 
     def order(self):
-        self.expr.order()
+        self.expr = self.expr.order()
 
     def compile(self, ctx):
         self.expr.compile(ctx)
@@ -642,7 +657,7 @@ class AstReturn:
         return cls(AstExpr.parse(stream))
 
     def order(self):
-        self.expr.order()
+        self.expr = self.expr.order()
 
     def compile(self, ctx):
         self.expr.compile(ctx)

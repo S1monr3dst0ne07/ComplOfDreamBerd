@@ -1,14 +1,23 @@
 
 
-fn complexMake(a, b) =>
+
+fn x() => "x"
+fn y() => "y"
+
+fn complexMake(px, py) =>
 {
-   a + b!
+   var var dict = {}!
+   dict[x] = px!
+   dict[y] = py!
+   return dict!
 }
 
 
 fn main() =>
 {
-   print complexMake(1, 1)!
+   var var c = complexMake(3, 5)!
+   print c!
+
 }
 
 

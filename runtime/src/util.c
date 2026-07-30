@@ -76,7 +76,7 @@ object_t util_get_ht(object_t table_obj, object_t key)
     object_t deep = ht_get(table, key);
     if (!deep) goto entry_not_found;
     obj_dec(key);
-    return key;
+    return deep;
 
 entry_not_found:
 not_a_table:

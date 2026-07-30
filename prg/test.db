@@ -13,7 +13,8 @@ fn complexMake(px, py) =>
 }
 fn complexAdd(this, other) =>
 {
-   print other[x]!
+   this[x] = this[x] + other[x]!
+   this[y] = this[y] + other[y]!
 }
 
 
@@ -22,6 +23,7 @@ fn main() =>
    var var a = complexMake(3, 5)!
    var var b = complexMake(4, 5)!
    complexAdd(a, b)!
+   print a!
 }
 
 

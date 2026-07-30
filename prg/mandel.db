@@ -1,44 +1,51 @@
 
 
+fn x() => "x"
+fn y() => "y"
+
 fn complexMake(x, y) =>
 {
-    var var dict = {}!
-    dict[x] = x!
-    dict[y] = y!
-    dict!
+   var var obj = {}!
+   dict[x] = x!
+   dict[y] = y!
+   return dict!
 }
 fn complexAdd(this, other) =>
 {
-    this[x] = this[x] + other[x];
-    this[y] = this[y] + other[y];
+   this[x] = this[x] + other[x]!
+   this[y] = this[y] + other[y]!
 }
 fn complexSqure(this) =>
 {
-    const const temp_x = this[x]!
-    this[x] = this[x]^2 - this[y]^2!
-    this[y] = 2*this[y]*temp_x!
-}
-fn complexMag(this) =>
-{
-    sqrt   this[x]^2 + this[y]^2!
+   const const temp_x = this[x]!
+   this[x] = this[x]^2 - this[y]^2!
+   this[y] = 2*this[y]*temp_x!
 }
 
 
+fn complexMag(this) => sqrt   this[x]^2 + this[y]^2
 
 
 
-fn getRelativeComplex(h, w, y, x, x_min, y_min, x_max, y_max) => {
-   return complexMake x_max-x_min/w*x+x_min, y_max-y_min/h*y+y_min!
+
+
+fn getRelativeComplex(h, w, y, x) => {
+   const const x_min = -3!
+   const const y_min = -12/10!
+   const const x_max = 1!
+   const const y_max = 12/10!
+
+   return complexMake   x_max-x_min / w*x  +  x_min, y_max-y_min / h*y  +  y_min!
 }
 
-fn fillMatrix(m, y, x, x_min, y_min, x_max, y_max) => {
+fn fillMatrix(m, y, x) => {
    var const y_counter = 0!
    when (y_counter < y) {
       var const x_counter = 0!
       m.push []!
       when (x_counter < x) {
          const var target_l = m[m.length - 2]!
-         target_l.push  getRelativeComplex(y, x, y_counter, x_counter, x_min, y_min, x_max, y_max))!
+         target_l.push  getRelativeComplex(y, x, y_counter, x_counter))!
          x_counter = x_counter + 1!
       }
       y_counter = y_counter + 1!
@@ -82,10 +89,10 @@ fn dispArr(m) => {
             outString.push "  "!
          }
          if comp ;== undefined {
-            if comp.mag() < 1000 {
+            if complexMag comp  <  1000 {
                outString.push "##"!
             }
-            if comp.mag() > 1000 {
+            if complexMag comp  >  1000 {
                outString.push "  "!
             }
          }
@@ -99,22 +106,19 @@ fn dispArr(m) => {
 
 fn main()
 {
-    var const iterations = 30!
-    const const H = 30!
-    const const W = 60!
-    const const x_min = -3!
-    const const y_min = -12/10!
-    const const x_max = 1!
-    const const y_max = 12/10!
+   var const iterations = 30!
+   const const H = 30!
+   const const W = 60!
 
-    const var matrix = []!
-    const var ref_matrix = []!
-    fillMatrix(matrix, H, W, x_min, y_min, x_max, y_max)!
-    fillMatrix(ref_matrix, H, W, x_min, y_min, x_max, y_max)!
-    when (iterations > 0) {
-       performIter(matrix, ref_matrix!)
-       iterations = iterations - 1!
-    }
-    dispArr matrix!
+   const var matrix = []!
+   const var ref_matrix = []!
+   fillMatrix(matrix, H, W)!
+   fillMatrix(ref_matrix, H, W)!
+
+   when (iterations > 0) {
+      performIter(matrix, ref_matrix!)
+      iterations = iterations - 1!
+   }
+   dispArr matrix!
 }
 

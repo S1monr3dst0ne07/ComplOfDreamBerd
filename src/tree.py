@@ -403,6 +403,8 @@ class AstExpr:
 
         match self.op:
             case '+': ctx.emit('add rax, rbx')
+            case '-': ctx.emit('sub rax, rbx')
+            case '*': ctx.emit('mul rbx')
 
             case x: print(f"impl op: {x}")
 

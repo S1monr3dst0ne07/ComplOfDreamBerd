@@ -1,9 +1,6 @@
 
 
-
-
 fn main() =>
 {
-   var var x = "Hello World"!
-   print x!
+   print "Hello World"!
 }

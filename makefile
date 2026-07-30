@@ -1,6 +1,6 @@
 
 
-TARGET=prg/test.db
+TARGET=prg/arith.db
 
 run: build
 	./main

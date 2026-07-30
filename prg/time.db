@@ -1,7 +1,0 @@
-
-var var magictime = Date.now()!
-
-//magictime = magictime - 3600000! //move back by one hour
-
-print magictime!
-

@@ -81,7 +81,12 @@ class Ctx:
         self.emit("extrn obj_dec")
         self.emit("extrn obj_dec_unwrap")
 
+        self.emit("extrn ht_get")
+        self.emit("extrn ht_set")
+        self.emit("extrn ht_create")
+
         self.emit("extrn util_create_string")
+        self.emit("extrn util_set_ht")
 
         self.emit("extrn debug_get_obj_count")
 
@@ -99,7 +104,7 @@ class Ctx:
 
     def finalize(self):
         self.emit("section '.data' writeable")
-        self.emit("vars: dp 100")
+        self.emit("vars: rq 100")
 
         for label, content in self.strings.items():
             self.emit(f'{label}:\ndb "{content}", 0')

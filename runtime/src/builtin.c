@@ -37,19 +37,18 @@ object_t _print(object_t obj)
         default:
             debug("_print impl\n");
     }
-
-    // refernces always goes out of scope
-    obj_dec(obj);
-
-    return obj_create(KIND_UNDEFINED, 0);
 }
 
 
 object_t print(object_t obj)
 {
-    object_t ret = _print(obj);
+    _print(obj);
     outchar('\n');
-    return ret;
+
+    // refernces always goes out of scope
+    obj_dec(obj);
+
+    return obj_create(KIND_UNDEFINED, 0);
 }
 
 

@@ -38,6 +38,7 @@ void obj_del(object_t obj)
         case KIND_STRING:
         case KIND_DICT:
             ht_del(obj->data);
+            free(obj);
             break;
         default:
             debug("TOOD: implement obj_del\n");
@@ -108,6 +109,10 @@ bool obj_cmp(object_t a, object_t b)
     switch (a->kind)
     {
         case KIND_INT: return a->data == b->data;
+        case KIND_DICT:
+        case KIND_STRING:
+            return ht_cmp(a->data, b->data);
+
 
         default:
             debug("TOOD: implement obj_cmp\n");

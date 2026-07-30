@@ -11,13 +11,17 @@ fn complexMake(px, py) =>
    dict[y] = py!
    return dict!
 }
+fn complexAdd(this, other) =>
+{
+   print other[x]!
+}
 
 
 fn main() =>
 {
-   var var c = complexMake(3, 5)!
-   print c!
-
+   var var a = complexMake(3, 5)!
+   var var b = complexMake(4, 5)!
+   complexAdd(a, b)!
 }
 
 

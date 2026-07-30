@@ -70,6 +70,11 @@ static object_t ht_set_entry(ht_entry* entries, size_t capacity, object_t key, o
         if (++index >= capacity) index = 0;
     }
 
+    if (plength)
+        // if the key is new,
+        // a new reference is created by registering it.
+        obj_inc(key);
+
     ent->key   = key;
 key_found:
     ent->value = value;
@@ -188,6 +193,30 @@ uint64_t ht_hash(ht* table) {
     return hash;
 }
 
+
+bool ht_cmp(ht* a, ht* b)
+{
+    hti i = ht_iterator(a);
+    hti j = ht_iterator(b);
+
+    if (a->length != b->length) 
+        return false;
+
+    for (;;)
+    {
+        ht_entry* x = ht_next(&i);
+        ht_entry* y = ht_next(&j);
+        if (!x && !y) break;
+        if (!x || !y) return false; // content mismatch
+
+        if (!x->key || !y->key) return false;
+
+        if (!obj_cmp(x->key,   y->key  )) return false;
+        if (!obj_cmp(x->value, y->value)) return false;
+    }
+
+    return true;
+}
 
 #endif
 

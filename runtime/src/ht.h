@@ -1,6 +1,7 @@
 #ifndef _H_HT
 #define _H_HT
 
+#include <stdbool.h>
 
 typedef struct {
     object_t key;
@@ -33,6 +34,7 @@ ht_entry* ht_next(hti* it);
 ht_entry* ht_count(hti* it);
 
 uint64_t ht_hash(ht* table);
+bool     ht_cmp(ht* a, ht* b);
 
 
 #endif

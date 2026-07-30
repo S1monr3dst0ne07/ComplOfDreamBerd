@@ -169,9 +169,7 @@ class AstIndexAccess:
 
         return cls(name, index)
 
-
     def store(self, ctx):
-        ctx.emit("; AstIndexAccess start")
         ctx.emit("push rax")
         self.index.compile(ctx)
         ctx.emit(f"pop {binding.ABI[2]}") 
@@ -179,7 +177,14 @@ class AstIndexAccess:
         addr = ctx.scope.get(self.name)
         ctx.emit(f"mov {binding.ABI[0]}, [vars + {addr}]")
         ctx.emit("call util_set_ht")
-        ctx.emit("; AstIndexAccess end")
+
+    def compile(self, ctx):
+        self.index.compile(ctx)
+        ctx.emit(f"mov {binding.ABI[1]}, rax")
+        addr = ctx.scope.get(self.name)
+        ctx.emit(f"mov {binding.ABI[0]}, [vars + {addr}]")
+        ctx.emit("call util_get_ht")
+
 
 
 
@@ -222,19 +227,19 @@ class AstLeaf:
         match stream.peekt().kind:
             case 'numb':
                 value = int(stream.pop())
-                return cls(binding.KIND.INT, value)
+                return cls('int', value)
 
             case 'quote': 
                 content = cls._parse_string(stream)
-                return cls(binding.KIND.STRING, content)
+                return cls('string', content)
                 
             case 'arrayopen':
                 AstLitArray.parse(stream)
-                return cls(binding.KIND.ARRAY, 0)
+                return cls('array', 0)
 
             case 'blockopen':
                 AstLitDict.parse(stream)
-                return cls(binding.KIND.DICT, 0)
+                return cls('dict', 0)
 
             case 'iden' | 'sym': 
                 if stream.lookhead(2)[1].kind == 'arrayopen':
@@ -250,31 +255,35 @@ class AstLeaf:
 
         return self.value.vars()
 
-    def _create_object(self, ctx):
+    def _create_object(self, ctx, kind):
         # create actual runtime object from rax
-        ctx.emit(f"mov rdi, {self.kind}")
+        ctx.emit(f"mov rdi, {kind}")
         ctx.emit(f"mov rsi, rax")
         ctx.emit("call obj_create")
 
     def compile(self, ctx):
         match self.kind:
-            case binding.KIND.STRING:
+            case 'string':
                 label = ctx.fresh()
                 ctx.emit(f"mov rdi, {label}")
                 ctx.emit("call util_create_string")
 
                 ctx.strings[label] = self.value
 
-            case binding.KIND.INT:
+            case 'int':
                 ctx.emit(f"mov rax, {self.value}")
-                self._create_object(ctx)
+                self._create_object(ctx, binding.KIND.INT)
 
             case 'scope':
                 self.value.compile(ctx)
 
-            case binding.KIND.DICT:
+            case 'dict':
                 ctx.emit("call ht_create")
-                self._create_object(ctx)
+                self._create_object(ctx, binding.KIND.DICT)
+
+            case 'index':
+                self.value.compile(ctx)
+
 
             case x: print("todo impl leaf kind: ", self.kind)
 

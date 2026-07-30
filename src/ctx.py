@@ -37,12 +37,12 @@ class Scope:
     def save(self, ctx):
         for i in range(self.alloc):
             addr = i
-            ctx.emit(f"push qword [vars + {addr}]")
+            ctx.emit(f"push qword [vars + {addr*8}]")
 
     def restore(self, ctx):
         for i in range(self.alloc):
-            addr = self.alloc - (i + 1)
-            ctx.emit(f"pop qword [vars + {addr}]")
+            addr = self.alloc - (i+1)
+            ctx.emit(f"pop qword [vars + {addr*8}]")
 
 @dc
 class Ctx:
@@ -81,12 +81,11 @@ class Ctx:
         self.emit("extrn obj_dec")
         self.emit("extrn obj_dec_unwrap")
 
-        self.emit("extrn ht_get")
-        self.emit("extrn ht_set")
         self.emit("extrn ht_create")
 
         self.emit("extrn util_create_string")
         self.emit("extrn util_set_ht")
+        self.emit("extrn util_get_ht")
 
         self.emit("extrn debug_get_obj_count")
 

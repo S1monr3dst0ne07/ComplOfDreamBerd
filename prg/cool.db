@@ -174,7 +174,7 @@ fn eval(node) => {
 
 
 fn main() => {
-   var var src = "[3 * [13 + 7] ] - 10"!
+   var var src = "1 + 1"!
    var var stream = lex(src)!
    var var root = parseExpr(stream)!
    var var res = eval(root)!

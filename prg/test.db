@@ -1,6 +1,8 @@
 
 
 fn main() => {
-   var var string = "hello"!
-   print string[0]!
+   var var dict = {}!
+   var var subdict = {}!
+   dict["key"] = "value"!
+   print dict!
 }

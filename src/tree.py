@@ -307,15 +307,6 @@ class AstUn:
         sub = AstLeaf.parse(stream)
         return cls(op, sub)
 
-    def run(self, ctx):
-        sub = self.sub.run(ctx)
-        value = sub.content
-
-        match self.op:
-            case ';': res = not value
-            case '-': res = -value
-
-        return obj.Value(content=res, kind=sub.kind)
 
     def vars(self):
         return self.sub.vars()
@@ -440,35 +431,6 @@ class AstIf:
 
         ctx.emit(f"{skip_label}:")
 
-@dc
-class AstWhen:
-    cond : AstExpr
-    body : "AstStmt"
-
-    def order(self): 
-        self.cond = self.cond.order()
-        self.body.order()
-
-    @classmethod
-    def parse(cls, stream):
-        if 'when' in deleted_features:
-            error.error("Feature `when` has been deleted.")
-
-        stream.expect('when')
-        cond = AstExpr.parse(stream)
-        body = AstStmt.parse(stream)
-        return cls(cond, body)
-
-    def run(self, ctx):
-        for dep in self.cond.vars():
-            if dep not in ctx.scope.when:
-                ctx.scope.when[dep] = []
-
-            ctx.scope.when[dep].append(self)
-
-    def check(self, ctx):
-        if self.cond.run(ctx).content:
-            self.body.run(ctx)
 
 
 @dc
@@ -743,12 +705,14 @@ class AstStmt:
         return cls(sub, eos)
 
     def compile(self, ctx):
-        res = self.sub.compile(ctx)
+        self.sub.compile(ctx)
         
         match self.eos:
-            case "?": print("implemented debug");
+            case "?": 
+                ctx.emit("mov rdi, rax")
+                ctx.emit("call print")
 
-        return res
+
 
 
 

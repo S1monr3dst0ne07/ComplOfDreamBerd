@@ -6,7 +6,7 @@ This is a compiler implementation for a *very very* small
 subset of DreamBerd. The subset does not include many
 of the joke features that would just be too much effort
 to implement in a compiled setting. That said,
-the subset that it compiles it Turing Complete though!
+the subset that it compiles is Turing Complete though!
 
 This implementation is very very buggy!
 Currently, garbage collection does not fully work.

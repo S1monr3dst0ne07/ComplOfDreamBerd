@@ -9,8 +9,14 @@ to implement in a compiled setting. That said,
 the subset that it compiles it Turing Complete though!
 
 This implementation is very very buggy!
-Garbage collection does not work currently.
+Currently, garbage collection does not fully work.
 (Send patches plz :3)
+
+Showcase video: [https://youtu.be/D4J9zWpifv4](https://youtu.be/D4J9zWpifv4)
+
+Deepvide video: [https://youtu.be/vUeqFmb6Qj8](https://youtu.be/vUeqFmb6Qj8)
+
+Addendum video: [https://youtu.be/eGBGy-GueJY](https://youtu.be/eGBGy-GueJY)
 
 
 # Notice

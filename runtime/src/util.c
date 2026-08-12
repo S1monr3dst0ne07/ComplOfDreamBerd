@@ -4,6 +4,9 @@
 #include <object.c>
 #include <ht.c>
 
+// NOTE: the default reference convention
+// is move-on-call ALWAYS!
+
 object_t util_create_string(const char* ptr)
 {
     ht* table = ht_create();
@@ -15,11 +18,6 @@ object_t util_create_string(const char* ptr)
             key,
             obj_create(KIND_INT, (void*)(uint64_t)ptr[i])
         );
-
-        // the hash table make sure the object will
-        // stay alive if it needs a refernce to it.
-        // otherwise, the key has no refernces.
-        obj_dec(key);
     }
 
     return obj_create(KIND_STRING, table);
@@ -70,14 +68,15 @@ static bool _is_container(object_t x)
 
 void util_set_ht(object_t table_obj, object_t key, object_t value)
 {
-    if (!_is_container(table_obj))
-        goto not_a_table;
-    ht* table = table_obj->data;
+    if (!_is_container(table_obj)) 
+        goto error;
 
+    ht* table = table_obj->data;
     ht_set(table, key, value);
-not_a_table:
-    obj_dec(key);
     return;
+
+error:
+    putstr("Runtime Error: Trying to set element of non-table object.\n");
 }
 object_t util_get_ht(object_t table_obj, object_t key)
 {
@@ -87,7 +86,6 @@ object_t util_get_ht(object_t table_obj, object_t key)
 
     object_t deep = ht_get(table, key);
     if (!deep) goto entry_not_found;
-    obj_dec(key);
     return deep;
 
 entry_not_found:

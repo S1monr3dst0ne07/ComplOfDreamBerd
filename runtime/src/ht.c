@@ -33,8 +33,8 @@ void ht_del(ht* table)
         obj_dec(ent.value);
     }
 
-    free(table->entries);
-    free(table);
+    //free(table->entries);
+    //free(table);
 }
 
 
@@ -57,7 +57,7 @@ void* ht_get(ht* table, object_t key)
 }
 
 // Internal function to set an entry (without expanding table).
-static object_t ht_set_entry(ht_entry* entries, size_t capacity, object_t key, object_t value, size_t* plength) 
+void ht_set_entry(ht_entry* entries, size_t capacity, object_t key, object_t value, size_t* plength) 
 {
     uint64_t hash = obj_hash(key);
     size_t index = (size_t)(hash & (uint64_t)(capacity - 1));
@@ -71,17 +71,14 @@ static object_t ht_set_entry(ht_entry* entries, size_t capacity, object_t key, o
     }
 
     if (plength)
-    {
-        // if the key is new,
-        // a new reference is created by registering it.
-        obj_inc(key);
-
         (*plength)++;
-    }
 
-    ent->key   = key;
 key_found:
+    if (ent->key)   obj_dec(ent->key);
+    if (ent->value) obj_dec(ent->value);
+    ent->key   = key;
     ent->value = value;
+    return;
 }
 
 static bool ht_expand(ht* table)

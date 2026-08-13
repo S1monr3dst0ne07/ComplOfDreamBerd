@@ -474,12 +474,14 @@ class AstIf:
 class AstWhen:
     cond : AstExpr
     body : "AstStmt"
+    label : str = None
 
     def order(self):
         self.cond = self.cond.order()
         self.body.order()
 
     def collect(self, ctx):
+        self.label = ctx.fresh()
         ctx.scope.when.append(self)
         self.body.collect(ctx)
 
@@ -492,6 +494,16 @@ class AstWhen:
 
     def compile(self, ctx):
         pass
+
+    def post_compile(self, ctx):
+        skip_label = ctx.fresh()
+        self.cond.compile(ctx)
+        ctx.emit("cmp rax, 0")
+        ctx.emit(f"je {skip_label}")
+        self.body.compile(ctx)
+        ctx.emit(f"{skip_label}:")
+        ctx.emit("ret")
+
 
 @dc
 class AstBlock:
@@ -671,9 +683,15 @@ class AstFuncDef:
 
         ctx.emit(f"{ctx.scope.return_label}:")
         ctx.emit("push rax")
-        ctx.pop_scope()
+        ctx.scope.drop(ctx)
         ctx.emit("pop rax")
         ctx.emit("ret")
+
+        # make sure all of the whens are compiled out.
+        for when in ctx.scope.when:
+            when.post_compile(ctx)
+
+        ctx.pop_scope()
 
 
 @dc

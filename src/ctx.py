@@ -61,7 +61,6 @@ class Ctx:
         self.scope = Scope()
 
     def pop_scope(self):
-        self.scope.drop(self)
         self.scope = self.stack.pop()
 
     def emit(self, line):

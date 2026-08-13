@@ -583,8 +583,13 @@ class AstDecl:
         ctx.scope.new(self.name)
             
     def compile(self, ctx):
-        self.expr.compile(ctx)
         addr = ctx.scope.get(self.name)
+
+        #make sure object is droped on redeclare
+        ctx.emit(f"mov rdi, [vars + {addr}]")
+        ctx.emit(f"call obj_dec")
+
+        self.expr.compile(ctx)
         ctx.emit(f"mov [vars + {addr}], rax")
 
         ctx.when_call(ctx, self.name)

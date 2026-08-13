@@ -70,23 +70,19 @@ void decode_update(object_t obj)
 
 void obj_inc(object_t obj)
 {
-    if (obj)
-        obj->ref++;
-    else
-        debug("obj_inc NULL\n");
-    
+    if (!obj) return;
+
+    obj->ref++;
+
     UPDATE
 }
 void obj_dec(object_t obj)
 {
-    if (obj)
-    {
-        obj->ref--;
-        if (obj->ref == 0)
-            obj_del(obj);
-    }
-    else
-        debug("obj_dec NULL\n");
+    if (!obj) return;
+
+    obj->ref--;
+    if (obj->ref == 0)
+        obj_del(obj);
 
     UPDATE
 }

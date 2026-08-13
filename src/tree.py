@@ -98,6 +98,10 @@ class AstScopeAccess:
     def _compile_call(self, ctx):
         ctx.scope.save(ctx)
 
+        if self.subj:
+            tmp = AstScopeAccess(iden = self.subj, params=[], subj=None)
+            self.params.insert(0, tmp)
+
         #load paramters
         for param in self.params[::-1]:
             param.compile(ctx)

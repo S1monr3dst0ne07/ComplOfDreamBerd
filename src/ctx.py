@@ -63,6 +63,10 @@ class Ctx:
     def pop_scope(self):
         self.scope = self.stack.pop()
 
+    def when_call(self, ctx, trigger):
+        for when in self.scope.when:
+            when.call(ctx, trigger)
+
     def emit(self, line):
         self.output += line + '\n'
 

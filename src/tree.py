@@ -135,6 +135,9 @@ class AstScopeAccess:
         ctx.emit(f"pop rdi")
         ctx.emit("call obj_dec")
 
+        # make sure that when, which are listening
+        # to this variable, get dispatched.
+        ctx.when_call(ctx, self.iden)
 
 
 @dc
@@ -268,10 +271,10 @@ class AstLeaf:
             case x: error.error(f"Unknown leaf kind: {stream.popt()}")
 
     def vars(self):
-        if type(self.value) is obj.Value:
-            return []
+        if self.kind in ('scope'):
+            return self.value.vars()
 
-        return self.value.vars()
+        return []
 
     def _create_object(self, ctx, kind):
         # create actual runtime object from rax
@@ -483,7 +486,7 @@ class AstWhen:
         self.body.order()
 
     def collect(self, ctx):
-        self.label = ctx.fresh()
+        self.label = f"db_when_{ctx.fresh()}"
         ctx.scope.when.append(self)
         self.body.collect(ctx)
 
@@ -497,16 +500,21 @@ class AstWhen:
     def compile(self, ctx):
         pass
 
+    def call(self, ctx, trigger):
+        if trigger in self.cond.vars():
+            ctx.emit(f"call {self.label}")
+
     def post_compile(self, ctx):
         ctx.emit(f"{self.label}:")
         skip_label = ctx.fresh()
         self.cond.compile(ctx)
+        ctx.emit("mov rdi, rax")
+        ctx.emit("call obj_dec_unwrap")
         ctx.emit("cmp rax, 0")
         ctx.emit(f"je {skip_label}")
         self.body.compile(ctx)
         ctx.emit(f"{skip_label}:")
         ctx.emit("ret")
-
 
 @dc
 class AstBlock:
@@ -578,6 +586,8 @@ class AstDecl:
         self.expr.compile(ctx)
         addr = ctx.scope.get(self.name)
         ctx.emit(f"mov [vars + {addr}], rax")
+
+        ctx.when_call(ctx, self.name)
 
 
 

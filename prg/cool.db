@@ -105,14 +105,14 @@ fn peek(stream) => {
 }
 
 
-fn strToInt(str, index) => {
+fn strToInt(str, index, acc) => {
    var var digit = str[index] - 48!
 
-   if str[index+1] === undefined {
-      return digit!
+   if str[index] === undefined {
+      return acc!
    }
 
-   return digit*10    +    strToInt(str, index+1)!
+   return strToInt(str, index+1, acc*10  +  digit)!
 }
 
 
@@ -126,7 +126,7 @@ fn parseLeaf(stream) => {
 
    var var node = {}!
    node["type"] = "leaf"!
-   node["content"] = strToInt(tok, 0)!
+   node["content"] = strToInt(tok, 0, 0)!
    return node!
 }
 

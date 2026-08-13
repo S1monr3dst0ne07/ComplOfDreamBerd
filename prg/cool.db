@@ -36,36 +36,37 @@ fn getKind(char) => {
 
 
 fn lexInternal(state) => {
+   if state["last kind"] === undefined {
+      return undefined!
+   }
+
    var var source = state["source"]!
    var var index  = state["source index"]!
    var var char = source[index]!
+   var var kind = getKind char!
 
    state["source index"] = index + 1!
 
-   if state["last kind"] ;== undefined {
-      var var kind = getKind char!
-
-      if state["last kind"] ;== kind {
-         if state["last kind"] ;== 'space' {
-            if state["last kind"] ;== 'none' {
-               index = state["token index"]!
-               var var tokens = state["token"]!
-               tokens[index] = state["buffer"]!
-               state["token index"] = index + 1!
-            }
+   if state["last kind"] ;== kind {
+      if state["last kind"] ;== 'space' {
+         if state["last kind"] ;== 'none' {
+            index = state["token index"]!
+            var var tokens = state["token"]!
+            tokens[index] = state["buffer"]!
+            state["token index"] = index + 1!
          }
-         state["buffer"] = ' '!
-         state["buffer index"] = 0!
       }
-
-      var var buffer = state["buffer"]!
-      index = state["buffer index"]!
-      buffer[index] = char!
-      state["buffer index"] = index + 1!
-
-      state["last kind"] = kind!
-      lexInternal(state)!
+      state["buffer"] = ' '!
+      state["buffer index"] = 0!
    }
+
+   var var buffer = state["buffer"]!
+   index = state["buffer index"]!
+   buffer[index] = char!
+   state["buffer index"] = index + 1!
+
+   state["last kind"] = kind!
+   lexInternal(state)!
 }
 
 fn lex(src) => {
@@ -174,7 +175,7 @@ fn eval(node) => {
 
 
 fn main() => {
-   var var src = "1 + 1"!
+   var var src = "[3 * 1] + 1"!
    var var stream = lex(src)!
    var var root = parseExpr(stream)!
    var var res = eval(root)!

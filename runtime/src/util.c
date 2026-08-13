@@ -121,7 +121,7 @@ enum op_kind_e
     OP_GREATER,
 };
 
-object_t util_operate(object_t a, object_t b, enum op_kind_e op)
+object_t util_operate(object_t b, object_t a, enum op_kind_e op)
 {
     #define VAL(x) ((int64_t)x->data)
     #define obj_create_cast(kind, x) (obj_create(kind, (void*)(x)))
@@ -130,15 +130,19 @@ object_t util_operate(object_t a, object_t b, enum op_kind_e op)
     switch (op)
     {
         case OP_PLUS:    ret = obj_create_cast(KIND_INT, VAL(a) + VAL(b)); break;
-        case OP_MINUS:   ret = obj_create_cast(KIND_INT, VAL(b) - VAL(a)); break;
+        case OP_MINUS:   ret = obj_create_cast(KIND_INT, VAL(a) - VAL(b)); break;
         case OP_TIMES:   ret = obj_create_cast(KIND_INT, VAL(a) * VAL(b)); break;
+        case OP_DIVIDE:  ret = obj_create_cast(KIND_INT, VAL(a) / VAL(b)); break;
         case OP_EQUAL:   ret = obj_create_cast(KIND_INT, obj_cmp(a, b)); break;
         case OP_INEQUAL: ret = obj_create_cast(KIND_INT, (uint64_t)!obj_cmp(a, b)); break;
 
-        case OP_NEGATE:  ret = obj_create_cast(KIND_INT, -VAL(a)); break;
+        case OP_NEGATE:  ret = obj_create_cast(KIND_INT, -VAL(b)); break;
 
-        case OP_LESSER:  ret = obj_create_cast(KIND_INT, (uint64_t)(VAL(a) > VAL(b))); break;
-        case OP_GREATER: ret = obj_create_cast(KIND_INT, (uint64_t)(VAL(a) < VAL(b))); break;
+        case OP_LESSER:  ret = obj_create_cast(KIND_INT, (uint64_t)(VAL(a) < VAL(b))); break;
+        case OP_GREATER: ret = obj_create_cast(KIND_INT, (uint64_t)(VAL(a) > VAL(b))); break;
+
+        default:
+            debug("IMPL OP\n");
     }
 
     obj_dec(a);

@@ -106,8 +106,11 @@ enum op_kind_e
     OP_PLUS = 1,
     OP_MINUS,
     OP_TIMES,
+    OP_DIVIDE,
+    OP_POWER,
     OP_EQUAL,
     OP_INEQUAL,
+    OP_NEGATE,
 };
 
 object_t util_operate(object_t a, object_t b, enum op_kind_e op)

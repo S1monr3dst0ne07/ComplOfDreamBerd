@@ -16,6 +16,8 @@ class Scope:
     vars  : dict[str, int] = field(default_factory=lambda: {})
     alloc : int = 0
 
+    when : list = field(default_factory=lambda: [])
+
     return_label : str = ""
 
     def drop(self, ctx):

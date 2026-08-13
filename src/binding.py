@@ -18,8 +18,13 @@ class OP:
     MINUS = 2
     TIMES = 3
 
-    EQUAL   = 4
-    INEQUAL = 5
+    DIVIDE = 4
+    POWER  = 5
+
+    EQUAL   = 6
+    INEQUAL = 7
+
+    NEGATE = 8
 
 
 

@@ -1,6 +1,6 @@
 
 
-TARGET=prg/cool.db
+TARGET=prg/mandel.db
 
 run: build
 	./main

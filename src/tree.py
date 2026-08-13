@@ -325,6 +325,17 @@ class AstUn:
         sub = AstLeaf.parse(stream)
         return cls(op, sub)
 
+    def compile(self, ctx):
+        ctx.emit("xor rdi, rdi")
+
+        self.sub.compile(ctx)
+        ctx.emit("mov rsi, rax")
+
+        match self.op:
+            case '-':
+                ctx.emit(f"mov rdx, {binding.OP.NEGATE}")
+
+        ctx.emit("call util_operate")
 
     def vars(self):
         return self.sub.vars()
@@ -411,6 +422,8 @@ class AstExpr:
             case '+':   kind = binding.OP.PLUS
             case '-':   kind = binding.OP.MINUS
             case '*':   kind = binding.OP.TIMES
+            case '/':   kind = binding.OP.DIVIDE
+            case '^':   kind = binding.OP.POWER
             case '===': kind = binding.OP.EQUAL
             case ';==': kind = binding.OP.INEQUAL
 
@@ -473,7 +486,7 @@ class AstWhen:
         body = AstStmt.parse(stream)
         return cls(cond, body)
 
-    def compile(self):
+    def compile(self, ctx):
         pass
 
 @dc

@@ -6,9 +6,9 @@ fn y() => "y"
 fn complexMake(x, y) =>
 {
    var var obj = {}!
-   dict[x] = x!
-   dict[y] = y!
-   return dict!
+   obj[x] = x!
+   obj[y] = y!
+   return obj!
 }
 fn complexAdd(this, other) =>
 {

@@ -61,3 +61,17 @@ object_t undefined()
 }
 
 
+object_t readline()
+{
+    static char buf[4096];
+    char* ptr = buf;
+
+    char c;
+    while ((c = inchar()) != '\n')
+        *ptr++ = c;
+
+    *ptr = '\0';
+    return util_create_string(buf);
+}
+
+

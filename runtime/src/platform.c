@@ -13,15 +13,27 @@
 // https://filippo.io/linux-syscall-table/
 enum
 {
+    SYS_READ  = 0,
     SYS_WRITE = 1,
     SYS_BRK   = 12,
     SYS_EXIT  = 60,
 };
 
 #define SYS_CLOBBERS "rcx","r11","memory"
+#define SYS_STDIN  0
 #define SYS_STDOUT 1
 
 
+char inchar()
+{
+    char c;
+    asm volatile (
+        "syscall"
+        : : "a"(SYS_READ), "D"(SYS_STDIN), "S"(&c), "d"(1)
+        : SYS_CLOBBERS
+    );
+    return c;
+}
 
 void outchar(char c)
 {

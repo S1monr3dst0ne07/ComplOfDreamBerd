@@ -55,10 +55,10 @@ void* obj_unwrap(object_t obj)
 
 void debug_update(object_t obj)
 {
-    //debug(single_int_to_string((uint64_t)obj));
-    //debug("\n");
-    //debug(single_int_to_string(obj->ref));
-    //debug("\n");
+    debug(single_int_to_string((uint64_t)obj));
+    debug("\n");
+    debug(single_int_to_string(obj->ref));
+    debug("\n");
 }
 
 
@@ -80,7 +80,7 @@ void obj_dec(object_t obj)
             obj_del(obj);
     }
     else
-        //debug("obj_dec NULL\n");
+        debug("obj_dec NULL\n");
 
     debug_update(obj);
 }
@@ -103,7 +103,8 @@ uint64_t obj_hash(object_t obj)
 {
     switch (obj->kind)
     {
-        case KIND_INT:  return (uint64_t)obj->data;
+        case KIND_UNDEFINED: return 0;
+        case KIND_INT:       return (uint64_t)obj->data;
         case KIND_DICT: 
         case KIND_STRING: 
             return ht_hash(obj->data);

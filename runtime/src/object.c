@@ -53,13 +53,19 @@ void* obj_unwrap(object_t obj)
     return obj->data;
 }
 
-void debug_update(object_t obj)
+void decode_update(object_t obj)
 {
-    debug(single_int_to_string((uint64_t)obj));
-    debug("\n");
-    debug(single_int_to_string(obj->ref));
-    debug("\n");
+    putstr(single_int_to_string((uint64_t)obj));
+    putstr("\n");
+    putstr(single_int_to_string(obj->ref));
+    putstr("\n");
 }
+
+#ifdef HEAP_DECODE
+    #define UPDATE decode_update(obj);
+#else 
+    #define UPDATE ;
+#endif
 
 
 void obj_inc(object_t obj)
@@ -69,7 +75,7 @@ void obj_inc(object_t obj)
     else
         debug("obj_inc NULL\n");
     
-    debug_update(obj);
+    UPDATE
 }
 void obj_dec(object_t obj)
 {
@@ -82,7 +88,7 @@ void obj_dec(object_t obj)
     else
         debug("obj_dec NULL\n");
 
-    debug_update(obj);
+    UPDATE
 }
 
 void* obj_dec_unwrap(object_t obj)

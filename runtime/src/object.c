@@ -18,10 +18,11 @@ object_t obj_create(kind_t kind, void* data)
     object_t obj = malloc(sizeof(struct _object_s));
     obj->kind = kind;
     obj->data = data;
+    obj->ref  = 0;
 
-        // one reference by caller 
-        // otherwise object would be drop immediately
-    obj->ref  = 1; 
+    // one reference by caller 
+    // otherwise object would be drop immediately
+    obj_inc(obj);
 
     _obj_count++;
     return obj;
@@ -52,6 +53,14 @@ void* obj_unwrap(object_t obj)
     return obj->data;
 }
 
+void debug_update(object_t obj)
+{
+    //debug(single_int_to_string((uint64_t)obj));
+    //debug("\n");
+    //debug(single_int_to_string(obj->ref));
+    //debug("\n");
+}
+
 
 void obj_inc(object_t obj)
 {
@@ -59,17 +68,21 @@ void obj_inc(object_t obj)
         obj->ref++;
     else
         debug("obj_inc NULL\n");
+    
+    debug_update(obj);
 }
 void obj_dec(object_t obj)
 {
     if (obj)
     {
         obj->ref--;
-        if (obj->ref == 0);
-            //obj_del(obj); TODO: fix this
+        if (obj->ref == 0)
+            obj_del(obj);
     }
     else
-        debug("obj_dec NULL\n");
+        //debug("obj_dec NULL\n");
+
+    debug_update(obj);
 }
 
 void* obj_dec_unwrap(object_t obj)

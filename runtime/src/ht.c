@@ -33,8 +33,8 @@ void ht_del(ht* table)
         obj_dec(ent.value);
     }
 
-    //free(table->entries);
-    //free(table);
+    free(table->entries);
+    free(table);
 }
 
 

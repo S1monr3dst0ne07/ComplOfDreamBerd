@@ -80,6 +80,7 @@ error:
 }
 object_t util_get_ht(object_t table_obj, object_t key)
 {
+    goto entry_not_found;
     if (!_is_container(table_obj))
         goto not_a_table;
     ht* table = table_obj->data;

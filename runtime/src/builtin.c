@@ -93,13 +93,21 @@ object_t db_func_sqrt(object_t x)
 }
 object_t db_func_push(object_t base, object_t elem)
 {
-    debug("IMPL db_func_sqrt\n");
+    debug("IMPL db_func_push\n");
     return base;
 }
-object_t db_func_length(object_t base, object_t elem)
+object_t db_func_length(object_t array)
 {
-    debug("IMPL db_func_sqrt\n");
-    return base;
+    if (array->kind != KIND_ARRAY)
+        goto error;
+
+    uint64_t len = ((ht*)array->data)->length;
+    obj_dec(array);
+
+    return obj_create(KIND_INT, (void*)len);
+
+error:
+    return obj_create(KIND_UNDEFINED, 0);
 }
 
 

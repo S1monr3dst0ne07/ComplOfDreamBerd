@@ -35,12 +35,15 @@ void putstr(const char* msg)
 }
 
 
-char* single_int_to_string(uint64_t x)
+char* single_int_to_string(int64_t x)
 {
     static char buffer[64];
     char* iter = buffer + sizeof(buffer);
 
     #define WRITE(c) (*(--iter)) = c
+
+    bool sign = x < 0;
+    if (sign) x = -x;
 
     WRITE('\0');
     if (!x) WRITE('0');
@@ -49,6 +52,8 @@ char* single_int_to_string(uint64_t x)
         WRITE((x % 10) + '0');
         x = x / 10;
     }
+
+    if (sign) WRITE('-');
 
     return iter;
 }
@@ -118,7 +123,7 @@ enum op_kind_e
 
 object_t util_operate(object_t a, object_t b, enum op_kind_e op)
 {
-    #define VAL(x) ((uint64_t)x->data)
+    #define VAL(x) ((int64_t)x->data)
     #define obj_create_cast(kind, x) (obj_create(kind, (void*)(x)))
 
     object_t ret;
@@ -132,8 +137,8 @@ object_t util_operate(object_t a, object_t b, enum op_kind_e op)
 
         case OP_NEGATE:  ret = obj_create_cast(KIND_INT, -VAL(a)); break;
 
-        case OP_LESSER:  ret = obj_create_cast(KIND_INT, VAL(a) > VAL(b)); break;
-        case OP_GREATER: ret = obj_create_cast(KIND_INT, VAL(a) < VAL(b)); break;
+        case OP_LESSER:  ret = obj_create_cast(KIND_INT, (uint64_t)(VAL(a) > VAL(b))); break;
+        case OP_GREATER: ret = obj_create_cast(KIND_INT, (uint64_t)(VAL(a) < VAL(b))); break;
     }
 
     obj_dec(a);

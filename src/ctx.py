@@ -78,6 +78,8 @@ class Ctx:
         self.emit("extrn db_func_undefined")
         self.emit("extrn db_func_readline")
         self.emit("extrn db_func_sqrt")
+        self.emit("extrn db_func_push")
+        self.emit("extrn db_func_length")
 
         self.emit("extrn obj_create")
         self.emit("extrn obj_inc")

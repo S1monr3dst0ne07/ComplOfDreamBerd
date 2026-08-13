@@ -88,7 +88,18 @@ object_t db_func_readline()
 
 object_t db_func_sqrt(object_t x)
 {
+    debug("IMPL db_func_sqrt\n");
     return x;
+}
+object_t db_func_push(object_t base, object_t elem)
+{
+    debug("IMPL db_func_sqrt\n");
+    return base;
+}
+object_t db_func_length(object_t base, object_t elem)
+{
+    debug("IMPL db_func_sqrt\n");
+    return base;
 }
 
 

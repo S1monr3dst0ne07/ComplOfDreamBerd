@@ -93,8 +93,12 @@ object_t db_func_sqrt(object_t x)
 }
 object_t db_func_push(object_t base, object_t elem)
 {
-    debug("IMPL db_func_push\n");
-    return base;
+    ht* table = (ht*)base->data;
+    uint64_t index = table->length;
+
+    ht_set(table, obj_create(KIND_INT, (void*)index), elem);
+
+    return obj_create(KIND_UNDEFINED, 0);
 }
 object_t db_func_length(object_t array)
 {

@@ -106,12 +106,11 @@ fn peek(stream) => {
 
 
 fn strToInt(str, index, acc) => {
-   var var digit = str[index] - 48!
-
    if str[index] === undefined {
       return acc!
    }
 
+   var var digit = str[index] - 48!
    return strToInt(str, index+1, acc*10  +  digit)!
 }
 

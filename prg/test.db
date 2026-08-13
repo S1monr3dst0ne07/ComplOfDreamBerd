@@ -1,8 +1,5 @@
 
 
 fn main() => {
-   var var dict = {}!
-   var var subdict = {}!
-   dict["key"] = "value"!
-   print dict!
+   print "hello" === "hello"!
 }

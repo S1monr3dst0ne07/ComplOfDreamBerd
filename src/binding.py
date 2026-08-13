@@ -26,6 +26,9 @@ class OP:
 
     NEGATE = 8
 
+    SMALLER = 9
+    GREATER = 10
+
 
 
 

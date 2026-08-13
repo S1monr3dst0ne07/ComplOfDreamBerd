@@ -55,7 +55,7 @@ object_t _print(object_t obj)
 }
 
 
-object_t print(object_t obj)
+object_t db_func_print(object_t obj)
 {
     _print(obj);
     outchar('\n');
@@ -67,13 +67,13 @@ object_t print(object_t obj)
 }
 
 
-object_t undefined()
+object_t db_func_undefined()
 {
     return obj_create(KIND_UNDEFINED, 0);
 }
 
 
-object_t readline()
+object_t db_func_readline()
 {
     static char buf[4096];
     char* ptr = buf;
@@ -86,7 +86,7 @@ object_t readline()
     return util_create_string(buf);
 }
 
-object_t sqrt(object_t x)
+object_t db_func_sqrt(object_t x)
 {
     return x;
 }

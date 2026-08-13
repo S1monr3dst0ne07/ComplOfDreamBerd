@@ -74,11 +74,10 @@ class Ctx:
         self.emit("format ELF64")
         self.emit("public _start")
 
-        self.emit("extrn outchar")
-        self.emit("extrn print")
-        self.emit("extrn undefined")
-        self.emit("extrn readline")
-        self.emit("extrn sqrt")
+        self.emit("extrn db_func_print")
+        self.emit("extrn db_func_undefined")
+        self.emit("extrn db_func_readline")
+        self.emit("extrn db_func_sqrt")
 
         self.emit("extrn obj_create")
         self.emit("extrn obj_inc")
@@ -97,7 +96,7 @@ class Ctx:
 
         self.emit("section '.text' executable")
         self.emit("_start:")
-        self.emit("call main")
+        self.emit("call db_func_main")
         self.emit("mov rdi, rax")
         self.emit("call obj_dec")
 

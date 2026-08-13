@@ -107,7 +107,7 @@ class AstScopeAccess:
         for reg in binding.ABI[:len(self.params)]:
             ctx.emit(f"pop {reg}")
 
-        ctx.emit(f"call {self.iden}")
+        ctx.emit(f"call db_func_{self.iden}")
         ctx.scope.restore(ctx)
 
     def _compile_var(self, ctx):
@@ -430,6 +430,8 @@ class AstExpr:
             case '^':   kind = binding.OP.POWER
             case '===': kind = binding.OP.EQUAL
             case ';==': kind = binding.OP.INEQUAL
+            case '<':   kind = binding.OP.SMALLER
+            case '>':   kind = binding.OP.GREATER
 
             case x: print(f"impl op: {x}")
 
@@ -496,6 +498,7 @@ class AstWhen:
         pass
 
     def post_compile(self, ctx):
+        ctx.emit(f"{self.label}:")
         skip_label = ctx.fresh()
         self.cond.compile(ctx)
         ctx.emit("cmp rax, 0")
@@ -649,7 +652,7 @@ class AstFuncDef:
         return cls(name, params, body)
 
     def compile(self, ctx):
-        ctx.emit(f"{self.name}:")
+        ctx.emit(f"db_func_{self.name}:")
 
         ctx.push_scope()
         for i, param_name in enumerate(self.params):
@@ -819,7 +822,7 @@ class AstStmt:
                 ctx.push_scope()
                 self.sub.compile(ctx)
                 ctx.emit("mov rdi, rax")
-                ctx.emit("call print")
+                ctx.emit("call db_func_print")
                 ctx.emit("mov rdi, rax")
                 ctx.emit("call obj_dec")
                 ctx.pop_scope()

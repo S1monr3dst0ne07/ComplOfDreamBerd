@@ -38,6 +38,7 @@ void obj_del(object_t obj)
             break;
         case KIND_STRING:
         case KIND_DICT:
+        case KIND_ARRAY:
             ht_del(obj->data);
             free(obj);
             break;

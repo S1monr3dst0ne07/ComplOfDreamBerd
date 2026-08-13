@@ -59,6 +59,7 @@ static bool _is_container(object_t x)
     {
         case KIND_DICT:
         case KIND_STRING:
+        case KIND_ARRAY:
             return true;
         default:
             return false;

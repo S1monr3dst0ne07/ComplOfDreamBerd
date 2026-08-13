@@ -79,6 +79,7 @@ class Ctx:
         self.emit("extrn print")
         self.emit("extrn undefined")
         self.emit("extrn readline")
+        self.emit("extrn sqrt")
 
         self.emit("extrn obj_create")
         self.emit("extrn obj_inc")

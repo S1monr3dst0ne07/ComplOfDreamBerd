@@ -37,6 +37,18 @@ object_t _print(object_t obj)
             outchar('}');
             break;
 
+        case KIND_ARRAY:
+            iter = ht_iterator(obj->data);
+            outchar('[');
+            while ((ent = ht_count(&iter)))
+            {
+                _print(ent->value);
+                putstr(", ");
+            }
+            outchar(']');
+            break;
+
+
         default:
             debug("_print impl\n");
     }
@@ -73,5 +85,11 @@ object_t readline()
     *ptr = '\0';
     return util_create_string(buf);
 }
+
+object_t sqrt(object_t x)
+{
+    return x;
+}
+
 
 

@@ -299,6 +299,10 @@ class AstLeaf:
                 ctx.emit("call ht_create")
                 self._create_object(ctx, binding.KIND.DICT)
 
+            case 'array':
+                ctx.emit("call ht_create")
+                self._create_object(ctx, binding.KIND.ARRAY)
+
             case 'index':
                 self.value.compile(ctx)
 

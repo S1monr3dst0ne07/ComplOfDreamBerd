@@ -95,6 +95,7 @@ object_t db_func_push(object_t base, object_t elem)
 {
     ht* table = (ht*)base->data;
     uint64_t index = table->length;
+    obj_dec(base);
 
     ht_set(table, obj_create(KIND_INT, (void*)index), elem);
 

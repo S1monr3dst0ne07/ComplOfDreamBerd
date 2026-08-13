@@ -8,7 +8,7 @@ typedef enum
     KIND_STRING,
     KIND_ARRAY,
     KIND_DICT,
-    KIND_FRAC
+    KIND_FLOAT,
 } kind_t;
 
 

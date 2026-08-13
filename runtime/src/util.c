@@ -121,33 +121,91 @@ enum op_kind_e
     OP_GREATER,
 };
 
-object_t util_operate(object_t b, object_t a, enum op_kind_e op)
+int64_t util_operate_int(int64_t a, int64_t b, enum op_kind_e op)
 {
-    #define VAL(x) ((int64_t)x->data)
-    #define obj_create_cast(kind, x) (obj_create(kind, (void*)(x)))
-
-    object_t ret;
     switch (op)
     {
-        case OP_PLUS:    ret = obj_create_cast(KIND_INT, VAL(a) + VAL(b)); break;
-        case OP_MINUS:   ret = obj_create_cast(KIND_INT, VAL(a) - VAL(b)); break;
-        case OP_TIMES:   ret = obj_create_cast(KIND_INT, VAL(a) * VAL(b)); break;
-        case OP_DIVIDE:  ret = obj_create_cast(KIND_INT, VAL(a) / VAL(b)); break;
-        case OP_EQUAL:   ret = obj_create_cast(KIND_INT, obj_cmp(a, b)); break;
-        case OP_INEQUAL: ret = obj_create_cast(KIND_INT, (uint64_t)!obj_cmp(a, b)); break;
-
-        case OP_NEGATE:  ret = obj_create_cast(KIND_INT, -VAL(b)); break;
-
-        case OP_LESSER:  ret = obj_create_cast(KIND_INT, (uint64_t)(VAL(a) < VAL(b))); break;
-        case OP_GREATER: ret = obj_create_cast(KIND_INT, (uint64_t)(VAL(a) > VAL(b))); break;
+        case OP_PLUS:    return a + b;
+        case OP_MINUS:   return a - b;
+        case OP_TIMES:   return a * b;
+        case OP_DIVIDE:  return a / b;
+        case OP_NEGATE:  return -a;
+        case OP_LESSER:  return a < b;
+        case OP_GREATER: return a > b;
 
         default:
-            debug("IMPL OP\n");
+            debug("util_operate_int IMPL\n");
+    }
+}
+
+void util_cast_int_to_float(object_t x)
+{
+    int64_t val = (int64_t)x->data;
+    double  real = (float)val;
+    
+    double* trick = &real;
+    x->data = *(void**)trick;
+
+}
+
+void util_type_coerce(object_t a, object_t b)
+{
+    enum op_kind_e x = a->kind;
+    enum op_kind_e y = b->kind;
+
+    // type agreement, good, done.
+    if (x == y) return;
+
+    // int op float.
+    if (x == KIND_INT && y == KIND_FLOAT) util_cast_int_to_float(a);
+    if (x == KIND_FLOAT && y == KIND_INT) util_cast_int_to_float(b);
+}
+
+
+object_t util_operate(object_t b, object_t a, enum op_kind_e op)
+{
+    #define obj_data(x) ((int64_t)x->data)
+    #define obj_create_cast(kind, x) (obj_create(kind, (void*)(x)))
+    
+
+    object_t ret;
+
+    // object equality is type agnostic.
+    /**/ if (op == OP_EQUAL)   ret = obj_create_cast(KIND_INT, obj_cmp(a, b));
+    else if (op == OP_INEQUAL) ret = obj_create_cast(KIND_INT, (uint64_t)!obj_cmp(a, b));
+    else {
+        util_type_coerce(a, b);
+
+        if (a->kind != b->kind)
+            goto type_mismatch;
+
+
+        switch(a->kind)
+        {
+            case KIND_INT: 
+                ret = obj_create_cast(
+                    KIND_INT, 
+                    util_operate_int(
+                        (int64_t)a->data, 
+                        (int64_t)b->data, 
+                        op
+                    )
+                );
+                break;
+        }
     }
 
     obj_dec(a);
     obj_dec(b);
     return ret;
+
+type_mismatch:
+    putstr("Runtime Error: Arithemtic operation, type mismatch.\n");
+    putstr(single_int_to_string(a->kind));
+    putstr("\n");
+    putstr(single_int_to_string(b->kind));
+    putstr("\n");
+    return obj_create(KIND_UNDEFINED, 0);
 }
 
 

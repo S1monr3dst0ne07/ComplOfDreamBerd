@@ -10,7 +10,6 @@ class KIND:
     STRING = 2
     ARRAY  = 3
     DICT   = 4
-    FRAC   = 5
 
 
 class OP:

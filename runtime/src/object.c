@@ -34,6 +34,7 @@ void obj_del(object_t obj)
     {
         case KIND_UNDEFINED:
         case KIND_INT:
+        case KIND_FLOAT:
             free(obj);
             break;
         case KIND_STRING:
@@ -107,7 +108,9 @@ uint64_t obj_hash(object_t obj)
     switch (obj->kind)
     {
         case KIND_UNDEFINED: return 0;
-        case KIND_INT:       return (uint64_t)obj->data;
+        case KIND_INT:
+        case KIND_FLOAT:
+            return (uint64_t)obj->data;
         case KIND_DICT: 
         case KIND_STRING: 
             return ht_hash(obj->data);
@@ -127,7 +130,8 @@ bool obj_cmp(object_t a, object_t b)
     switch (a->kind)
     {
         case KIND_UNDEFINED: return true;
-        case KIND_INT: return a->data == b->data;
+        case KIND_INT:   return a->data == b->data;
+        case KIND_FLOAT: return a->data == b->data;
         case KIND_DICT:
         case KIND_STRING:
             return ht_cmp(a->data, b->data);

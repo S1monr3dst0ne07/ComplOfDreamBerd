@@ -12,12 +12,6 @@ This implementation is very very buggy!
 Currently, garbage collection does not fully work.
 (Send patches plz :3)
 
-Showcase video: [https://youtu.be/D4J9zWpifv4](https://youtu.be/D4J9zWpifv4)
-
-Deepvide video: [https://youtu.be/vUeqFmb6Qj8](https://youtu.be/vUeqFmb6Qj8)
-
-Addendum video: [https://youtu.be/eGBGy-GueJY](https://youtu.be/eGBGy-GueJY)
-
 
 # Notice
 All of the source in this repo has been written by my own two paws.

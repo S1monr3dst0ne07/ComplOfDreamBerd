@@ -2,15 +2,11 @@
 
 TARGET=prg/cool.db
 
-decode: compile
-	make decode -C runtime/  -B
-	fasm build.asm build.o
-	ld build.o runtime/build.o -o main \
-		-z noexecstack
-	./main | python3 decode.py
-
 run: build
 	./main
+
+decode: runtime_decode compile asm
+	./main | python3 decode.py
 
 build: runtime compile asm
 
@@ -23,7 +19,10 @@ asm:
 		-z noexecstack
 
 runtime:
-	make -C runtime/ -B
+	make -B -C runtime/
+
+runtime_decode:
+	make -B decode -C runtime/
 
 clean:
 	-rm build.asm build.o main

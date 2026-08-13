@@ -200,6 +200,8 @@ class AstLeaf:
 
         return self
 
+    def collect(self, ctx): pass
+
     @staticmethod
     def _compute_quote_size(token):
         size = 0
@@ -411,6 +413,9 @@ class AstIf:
         self.cond = self.cond.order()
         self.body.order()
 
+    def collect(self, ctx):
+        self.body.collect(ctx)
+
     @classmethod
     def parse(cls, stream):
         stream.expect('if')
@@ -460,6 +465,10 @@ class AstBlock:
         for stmt in self.stmts:
             stmt.compile(ctx)
 
+    def collect(self, ctx): 
+        for stmt in self.stmts:
+            stmt.collect(ctx)
+
 
 @dc
 class AstDecl:
@@ -489,13 +498,15 @@ class AstDecl:
             expr=expr, 
         )
 
-            
-    def compile(self, ctx):
+    def collect(self, ctx):
         if self.name in ctx.scope.vars:
             error.error("Variable `{self.name}` declared multiple times.")
 
+        ctx.scope.new(self.name)
+            
+    def compile(self, ctx):
         self.expr.compile(ctx)
-        addr = ctx.scope.new(self.name)
+        addr = ctx.scope.get(self.name)
         ctx.emit(f"mov [vars + {addr}], rax")
 
 
@@ -507,6 +518,8 @@ class AstDecl:
 class AstAssign:
     dst : "AstScopeAccess | AstIndexAccess"
     src : "AstExpr"
+
+    def collect(self, ctx): pass
 
     def order(self): 
         self.dst.order()
@@ -577,6 +590,17 @@ class AstFuncDef:
             reg = binding.ABI[i]
             ctx.emit(f"mov [vars + {addr}], {reg}")
 
+        self.body.collect(ctx)
+        for local_name in ctx.scope.vars:
+            if local_name in self.params: continue
+            addr = ctx.scope.get(local_name)
+
+            # !! THIS IS REALLY REALLY IMPORTANT !!
+            # this is called base-initialization.
+            # if a variable is declare-initialized conditionally
+            # this needs to be detectable by the runtime.
+            ctx.emit(f"mov qword [vars + {addr}], 0")
+
         ctx.scope.return_label = ctx.fresh()
 
         ctx.emit("; body start")
@@ -601,6 +625,8 @@ class AstFuncDef:
 class AstInline:
     expr : AstExpr
 
+    def collect(self, ctx): pass
+
     @classmethod
     def parse(cls, stream):
         return cls(AstExpr.parse(stream))
@@ -621,6 +647,8 @@ class AstInline:
 @dc
 class AstReturn:
     expr : AstExpr
+
+    def collect(self, ctx): pass
 
     @classmethod
     def parse(cls, stream):
@@ -652,6 +680,9 @@ class AstStmt:
             
 
     def order(self): self.sub.order()
+
+    def collect(self, ctx):
+        self.sub.collect(ctx)
 
     @classmethod
     def parse(cls, stream):
@@ -734,7 +765,7 @@ class AstProg:
 
     def compile(self):
         ctx = Ctx()
-        
+
         ctx.header()
         self.body.compile(ctx)
         ctx.finalize()

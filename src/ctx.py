@@ -98,9 +98,9 @@ class Ctx:
         self.emit("mov rdi, rax")
         self.emit("call obj_dec")
 
-        #self.emit("call debug_get_obj_count")
-        #self.emit("mov rdi, rax")
-        self.emit("mov rdi, 0")
+        self.emit("call debug_get_obj_count")
+        self.emit("mov rdi, rax")
+        #self.emit("mov rdi, 0")
         self.emit("mov rax, 60")
         self.emit("syscall")
 

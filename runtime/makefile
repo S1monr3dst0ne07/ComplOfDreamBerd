@@ -3,8 +3,7 @@
 
 build.o: src/*.c
 	gcc -g -c src/all.c -o $@ -Isrc/ \
-		-Wno-builtin-declaration-mismatch \
-		-Wno-free-nonheap-object \
+		-ffreestanding \
 		-O0
 
 decode:

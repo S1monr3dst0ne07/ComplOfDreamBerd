@@ -153,39 +153,55 @@ class AstLitDict:
 
 @dc
 class AstIndexAccess:
-    name  : "str"
-    index : "AstExpr"
+    name     : "str"
+    indices : list["AstExpr"]
 
     def order(self):
-        self.index = self.index.order()
+        for i, old in enumerate(self.indices):
+            self.indices[i] = old.order()
 
     @classmethod
     def parse(cls, stream):
         name = stream.pop()
 
-        stream.expect('[') #]
-        index = AstExpr.parse(stream)
-        stream.expect(']')
+        indices = []
+        while stream.peek() == '[':
+            stream.expect('[') #]
+            index = AstExpr.parse(stream)
+            stream.expect(']')
+            indices.append(index)
 
-        return cls(name, index)
+        return cls(name, indices)
+
+    def traverse(self, ctx, path):
+        addr = ctx.scope.get(self.name)
+        ctx.emit(f"mov rax, [vars + {addr}]")
+
+        for index in path:
+            ctx.emit(f"push rax")
+            index.compile(ctx)
+            ctx.emit(f"mov {binding.ABI[1]}, rax")
+
+            ctx.emit(f"pop {binding.ABI[0]}")
+            ctx.emit("call util_get_ht")
+
 
     def store(self, ctx):
+        *path, key = self.indices
+
         ctx.emit("push rax")
-        self.index.compile(ctx)
-        ctx.emit(f"pop {binding.ABI[2]}") 
+
+        key.compile(ctx)
         ctx.emit(f"mov {binding.ABI[1]}, rax")
-        addr = ctx.scope.get(self.name)
-        ctx.emit(f"mov {binding.ABI[0]}, [vars + {addr}]")
+
+        self.traverse(ctx, path)
+        ctx.emit(f"mov {binding.ABI[0]}, rax")
+
+        ctx.emit(f"pop {binding.ABI[2]}") 
         ctx.emit("call util_set_ht")
 
     def compile(self, ctx):
-        self.index.compile(ctx)
-        ctx.emit(f"mov {binding.ABI[1]}, rax")
-        addr = ctx.scope.get(self.name)
-        ctx.emit(f"mov {binding.ABI[0]}, [vars + {addr}]")
-        ctx.emit("call util_get_ht")
-
-
+        self.traverse(ctx, self.indices)
 
 
 
@@ -390,6 +406,7 @@ class AstExpr:
         ctx.emit("mov rsi, rax")
         ctx.emit("pop rdi")
 
+        kind = None
         match self.op:
             case '+':   kind = binding.OP.PLUS
             case '-':   kind = binding.OP.MINUS
@@ -436,7 +453,28 @@ class AstIf:
 
         ctx.emit(f"{skip_label}:")
 
+@dc
+class AstWhen:
+    cond : AstExpr
+    body : "AstStmt"
 
+    def order(self):
+        self.cond = self.cond.order()
+        self.body.order()
+
+    def collect(self, ctx):
+        ctx.scope.when.append(self)
+        self.body.collect(ctx)
+
+    @classmethod
+    def parse(cls, stream):
+        stream.expect('when')
+        cond = AstExpr.parse(stream)
+        body = AstStmt.parse(stream)
+        return cls(cond, body)
+
+    def compile(self):
+        pass
 
 @dc
 class AstBlock:
@@ -662,6 +700,7 @@ class AstReturn:
         self.expr.compile(ctx)
         ctx.emit(f"jmp {ctx.scope.return_label}")
 
+
 @dc
 class AstStmt:
     sub : typing.Any
@@ -702,7 +741,7 @@ class AstStmt:
                 need_eos = False
             case 'when', _:
                 sub = AstWhen.parse(stream)
-                need_eos = type(sub) is AstExpr
+                need_eos = False
             case 'return', _:
                 sub = AstReturn.parse(stream)
 

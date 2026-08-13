@@ -719,7 +719,7 @@ class AstStmt:
             case x, y if all(i in ('const', 'var') for i in (x, y)):
                 sub = AstDecl.parse(stream)
 
-            case x: 
+            case x:
                 sub = AstInline.parse(stream)
     
         eos = None
@@ -736,17 +736,22 @@ class AstStmt:
         return cls(sub, eos)
 
     def compile(self, ctx):
-        self.sub.compile(ctx)
         
         match self.eos:
             case "?": 
+                if type(self.sub) is AstInline:
+                    self.sub = self.sub.expr
+
+                ctx.push_scope()
+                self.sub.compile(ctx)
                 ctx.emit("mov rdi, rax")
                 ctx.emit("call print")
+                ctx.emit("mov rdi, rax")
+                ctx.emit("call obj_dec")
+                ctx.pop_scope()
 
-
-
-
-
+            case _:
+                self.sub.compile(ctx)
     
 
 

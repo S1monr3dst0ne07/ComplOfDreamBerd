@@ -69,13 +69,13 @@ static bool _is_container(object_t x)
 void util_set_ht(object_t table_obj, object_t key, object_t value)
 {
     if (!_is_container(table_obj)) 
-        goto error;
+        goto not_a_table;
 
     ht* table = table_obj->data;
     ht_set(table, key, value);
     return;
 
-error:
+not_a_table:
     putstr("Runtime Error: Trying to set element of non-table object.\n");
 }
 object_t util_get_ht(object_t table_obj, object_t key)
@@ -90,8 +90,9 @@ object_t util_get_ht(object_t table_obj, object_t key)
     obj_inc(elem);
     goto done;
 
-entry_not_found:
 not_a_table:
+    putstr("Runtime Error: Trying to get element of non-table object.\n");
+entry_not_found:
     elem = obj_create(KIND_UNDEFINED, 0);
 
 done:

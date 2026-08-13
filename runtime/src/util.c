@@ -82,17 +82,21 @@ object_t util_get_ht(object_t table_obj, object_t key)
 {
     if (!_is_container(table_obj))
         goto not_a_table;
-    ht* table = table_obj->data;
 
-    object_t deep = ht_get(table, key);
-    if (!deep) goto entry_not_found;
-    //obj_inc(deep);
-    return deep;
+    ht* table = table_obj->data;
+    object_t elem = ht_get(table, key);
+
+    if (!elem) goto entry_not_found;
+    obj_inc(elem);
+    goto done;
 
 entry_not_found:
 not_a_table:
+    elem = obj_create(KIND_UNDEFINED, 0);
+
+done:
     obj_dec(key);
-    return obj_create(KIND_UNDEFINED, 0);
+    return elem;
 }
 
 

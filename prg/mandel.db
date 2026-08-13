@@ -42,7 +42,8 @@ fn fillMatrix(m, y, x) => {
    var const y_counter = 0!
    when (y_counter < y) {
       var const x_counter = 0!
-      m.push []!
+      var var tmp = [ ]!
+      m.push tmp!
       when (x_counter < x) {
          const var target_l = m[m.length - 2]!
          target_l.push  getRelativeComplex(y, x, y_counter, x_counter))!
@@ -53,7 +54,7 @@ fn fillMatrix(m, y, x) => {
 }
 
 
-frick performIter(m, ref) => {
+fn performIter(m, ref) => {
    var const y_counter = 0!
    when (y_counter < m.length) {
       var const x_counter = 0!
@@ -81,7 +82,7 @@ fn dispArr(m) => {
    var const y = 0! 
    when y < m.length {
       var const x = 0!
-      const var outString = ""!
+      const var outString = " "!
       const var outer = m[-1]!
       when x < outer.length {
          const const comp = m[y-1][x-1]!
@@ -104,7 +105,7 @@ fn dispArr(m) => {
 }
 
 
-fn main()
+fn main() =>
 {
    var const iterations = 30!
    const const H = 30!

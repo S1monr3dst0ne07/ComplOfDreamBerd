@@ -92,12 +92,7 @@ fn dispArr(m) => {
             outString.push 32!
          }
          if comp ;== undefined {
-            if 1000 > complexMag(comp) {
-               outString.push 65!
-            }
-            if 1000 < complexMag(comp) {
-               outString.push 32!
-            }
+            outString.push 65!
          }
          x = x + 1!
       }

@@ -121,31 +121,71 @@ enum op_kind_e
     OP_GREATER,
 };
 
-int64_t util_operate_int(int64_t a, int64_t b, enum op_kind_e op)
+void* util_float_to_voidptr(double x)
 {
+    double* trick = &x;
+    return *(void**)trick;
+}
+double util_voidptr_to_float(void* x)
+{
+    void** trick = &x;
+    return *(double*)trick;
+}
+
+object_t util_operate_int(int64_t a, int64_t b, enum op_kind_e op)
+{
+    int64_t res;
     switch (op)
     {
-        case OP_PLUS:    return a + b;
-        case OP_MINUS:   return a - b;
-        case OP_TIMES:   return a * b;
-        case OP_DIVIDE:  return a / b;
-        case OP_NEGATE:  return -a;
-        case OP_LESSER:  return a < b;
-        case OP_GREATER: return a > b;
+        case OP_PLUS:    res = a + b; goto normal;
+        case OP_MINUS:   res = a - b; goto normal;
+        case OP_TIMES:   res = a * b; goto normal;
+        case OP_NEGATE:  res = -a;    goto normal;
+        case OP_LESSER:  res = a < b; goto normal;
+        case OP_GREATER: res = a > b; goto normal;
+
+        case OP_DIVIDE:  
+            return obj_create(
+                KIND_FLOAT, 
+                util_float_to_voidptr(
+                    (double)a / b
+                )
+            );
 
         default:
             debug("util_operate_int IMPL\n");
     }
+
+normal:
+    return obj_create(KIND_INT, (void*)res);
+}
+
+object_t util_operate_double(double a, double b, enum op_kind_e op)
+{
+    double res;
+    switch (op)
+    {
+        case OP_PLUS:    res = a + b; goto normal;
+        case OP_MINUS:   res = a - b; goto normal;
+        case OP_TIMES:   res = a * b; goto normal;
+        case OP_NEGATE:  res = -a;    goto normal;
+        case OP_LESSER:  res = a < b; goto normal;
+        case OP_GREATER: res = a > b; goto normal;
+        case OP_DIVIDE:  res = a / b; goto normal;
+
+        default:
+            debug("util_operate_doulbe IMPL\n");
+    }
+
+normal:
+    return obj_create(KIND_FLOAT, util_float_to_voidptr(res));
 }
 
 void util_cast_int_to_float(object_t x)
 {
     int64_t val = (int64_t)x->data;
     double  real = (float)val;
-    
-    double* trick = &real;
-    x->data = *(void**)trick;
-
+    x->data = util_float_to_voidptr(real);
 }
 
 void util_type_coerce(object_t a, object_t b)
@@ -183,13 +223,17 @@ object_t util_operate(object_t b, object_t a, enum op_kind_e op)
         switch(a->kind)
         {
             case KIND_INT: 
-                ret = obj_create_cast(
-                    KIND_INT, 
-                    util_operate_int(
-                        (int64_t)a->data, 
-                        (int64_t)b->data, 
-                        op
-                    )
+                ret = util_operate_int(
+                    (int64_t)a->data, 
+                    (int64_t)b->data, 
+                    op
+                );
+                break;
+            case KIND_FLOAT:
+                ret = util_operate_double(
+                    util_voidptr_to_float(a->data), 
+                    util_voidptr_to_float(b->data), 
+                    op
                 );
                 break;
         }

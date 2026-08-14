@@ -48,6 +48,17 @@ object_t _print(object_t obj)
             outchar(']');
             break;
 
+        case KIND_FLOAT:
+            double value = util_voidptr_to_float(obj->data);
+            int64_t real = (int64_t) value;
+            double frac = value - (double)real;
+
+            putstr(single_int_to_string(real));
+            outchar('.');
+            while (frac != (int64_t)frac) frac *= 10;
+            putstr(single_int_to_string(frac));
+            break;
+
 
         default:
             debug("_print impl\n");

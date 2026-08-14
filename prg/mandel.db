@@ -3,11 +3,11 @@
 fn x() => "x"
 fn y() => "y"
 
-fn complexMake(x, y) =>
+fn complexMake(val_x, val_y) =>
 {
    var var obj = {}!
-   obj[x] = x!
-   obj[y] = y!
+   obj[x] = val_x!
+   obj[y] = val_y!
    return obj!
 }
 fn complexAdd(this, other) =>
@@ -23,53 +23,42 @@ fn complexSqure(this) =>
 }
 
 
-fn complexMag(this) => sqrt   this[x]^2 + this[y]^2
-
-
+fn complexMag(this) => {
+   var var tmp = this[x]^2 + this[y]^2!
+   print tmp!
+   return sqrt tmp!
+}
 
 
 
 fn getRelativeComplex(h, w, y, x) => {
-   const const x_min = -3!
+   const const x_min = - 3/ 1!
    const const y_min = -12/10!
-   const const x_max = 1!
-   const const y_max = 12/10!
+   const const x_max =   1/ 1!
+   const const y_max =  12/10!
 
-   return complexMake   x_max-x_min / w*x  +  x_min, y_max-y_min / h*y  +  y_min!
+   const const x_val = x_max-x_min * x/w!
+   const const y_val = y_max-y_min * y/h!
+
+   return complexMake x_val + x_min, y_val + y_min!
 }
-
-fn fillMatrix(m, y, x) => {
-   var const y_counter = 0!
-   when (y_counter < y) {
-      var const x_counter = 0!
-      var var tmp = [ ]!
-      m.push tmp!
-      when (x_counter < x) {
-         const var target_l = m[m.length - 2]!
-         target_l.push  getRelativeComplex(y, x, y_counter, x_counter))!
-         x_counter = x_counter + 1!
-      }
-      y_counter = y_counter + 1!
-   }
-}
-
 
 fn performIter(m, ref) => {
    var const y_counter = 0!
    when (y_counter < m.length) {
+      const var outermost = m[y_counter]!
+
       var const x_counter = 0!
-      const var outermost = m[y_counter-1]!
-      const var outermost_l = outermost.length!
-      when (x_counter < outermost_l) {
+      when (x_counter < outermost.length) {
          if outermost[x_counter-1] ;== undefined {
-            const var target_comp = outermost[x_counter-1]!
-            const var ref_comp = ref[y_counter-1][x_counter-1]!
+            const var target_comp = outermost[x_counter]!
+            const var ref_comp = ref[y_counter][x_counter]!
 
             complexSqure(target_comp)!
             complexAdd(target_comp, ref_comp)!
-
-            if complexMag(target_comp) > 1000 {
-               outermost[x_counter-1] = undefined!
+             
+            if 1000 < complexMag(target_comp) {
+               outermost[x_counter] = undefined!
             }
          }
          x_counter = x_counter + 1! 
@@ -78,23 +67,40 @@ fn performIter(m, ref) => {
    }
 }
 
+fn fillMatrix(m, h, w) => {
+   var const y_counter = 0!
+   when (y_counter < h) {
+      var var line = []!
+      var var x_counter = 0!
+      m.push line!
+
+      when (x_counter < w) {
+         line.push  getRelativeComplex(h, w, y_counter, x_counter))!
+         x_counter = x_counter + 1!
+      }
+      y_counter = y_counter + 1!
+   }
+}
+
 fn dispArr(m) => {
    var const y = 0! 
    when y < m.length {
-      var const x = 0!
       const var outString = " "!
-      const var outer = m[-1]!
+      const var outer = m[y]!
+
+      var const x = 0!
       when x < outer.length {
-         const const comp = m[y-1][x-1]!
+         const const comp = m[y][x]!
          if comp === undefined {
-            outString.push "  "!
+            outString.push 32!
          }
          if comp ;== undefined {
-            if complexMag comp  <  1000 {
-               outString.push "##"!
+            print complexMag(comp)!
+            if 1000 < complexMag(comp) {
+               outString.push 65!
             }
-            if complexMag comp  >  1000 {
-               outString.push "  "!
+            if 1000 > complexMag(comp) {
+               outString.push 32!
             }
          }
          x = x + 1!
@@ -105,21 +111,24 @@ fn dispArr(m) => {
 }
 
 
+
 fn main() =>
 {
-   var const iterations = 30!
    const const H = 30!
    const const W = 60!
 
    const var matrix = []!
-   const var ref_matrix = []!
    fillMatrix(matrix, H, W)!
+
+   const var ref_matrix = []!
    fillMatrix(ref_matrix, H, W)!
 
+   const const iterations = 3!
    when (iterations > 0) {
       performIter(matrix, ref_matrix!)
       iterations = iterations - 1!
    }
+
    dispArr matrix!
 }
 

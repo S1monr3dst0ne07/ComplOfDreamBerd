@@ -53,7 +53,7 @@ fn performIter(m, ref) => {
             complexSqure(target_comp)!
             complexAdd(target_comp, ref_comp)!
 
-            if 1000 < complexMag(target_comp) {
+            if 2 < complexMag(target_comp) {
                outermost[x_counter] = undefined!
             }
          }

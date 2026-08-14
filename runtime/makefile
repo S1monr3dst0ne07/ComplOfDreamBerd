@@ -8,8 +8,7 @@ build.o: src/*.c
 
 decode:
 	gcc -g -c src/all.c -o build.o -Isrc/ \
-		-Wno-builtin-declaration-mismatch \
-		-Wno-free-nonheap-object \
+		-ffreestanding \
 		-O0 \
 		-DHEAP_DECODE
 

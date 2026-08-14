@@ -37,13 +37,23 @@ void putstr(const char* msg)
 
 char* single_int_to_string(int64_t x)
 {
-    static char buffer[64];
+    static char buffer[1024];
     char* iter = buffer + sizeof(buffer);
+
 
     #define WRITE(c) (*(--iter)) = c
 
     bool sign = x < 0;
     if (sign) x = -x;
+
+    // int limit
+    if (x < 0)
+    {
+        WRITE('f');
+        WRITE('n');
+        WRITE('i');
+        goto done;
+    }
 
     WRITE('\0');
     if (!x) WRITE('0');
@@ -55,6 +65,7 @@ char* single_int_to_string(int64_t x)
 
     if (sign) WRITE('-');
 
+done:
     return iter;
 }
 

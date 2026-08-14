@@ -97,10 +97,20 @@ object_t db_func_readline()
     return util_create_string(buf);
 }
 
-object_t db_func_sqrt(object_t x)
+object_t db_func_sqrt(object_t obj_x)
 {
-    debug("IMPL db_func_sqrt\n");
-    return x;
+    double x = util_voidptr_to_float(obj_x->data);
+    double y = 0.0;
+    if (x <= 0.0) goto done;
+
+    y = x > 1.0 ? x : 1.0;
+    for (int i = 0; i < 30; ++i)
+        y = 0.5 * (y + x / y);
+
+done:
+    obj_x->data = util_float_to_voidptr(y);
+    return obj_x;
+
 }
 object_t db_func_push(object_t base, object_t elem)
 {

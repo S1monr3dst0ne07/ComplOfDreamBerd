@@ -18,16 +18,12 @@ fn complexAdd(this, other) =>
 fn complexSqure(this) =>
 {
    const const temp_x = this[x]!
-   this[x] = this[x]^2 - this[y]^2!
-   this[y] = 2*this[y]*temp_x!
+   this[x] = this[x]^2   -   this[y]^2!
+   this[y] = 2 * this[y] * temp_x!
 }
 
 
-fn complexMag(this) => {
-   var var tmp = this[x]^2 + this[y]^2!
-   print tmp!
-   return sqrt tmp!
-}
+fn complexMag(this) => sqrt this[x]^2 + this[y]^2
 
 
 
@@ -50,17 +46,18 @@ fn performIter(m, ref) => {
 
       var const x_counter = 0!
       when (x_counter < outermost.length) {
-         if outermost[x_counter-1] ;== undefined {
-            const var target_comp = outermost[x_counter]!
-            const var ref_comp = ref[y_counter][x_counter]!
+         const var target_comp = outermost[x_counter]!
+         const var ref_comp = ref[y_counter][x_counter]!
+         if target_comp ;== undefined {
 
             complexSqure(target_comp)!
             complexAdd(target_comp, ref_comp)!
-             
+
             if 1000 < complexMag(target_comp) {
                outermost[x_counter] = undefined!
             }
          }
+
          x_counter = x_counter + 1! 
       }
       y_counter = y_counter + 1!
@@ -95,11 +92,10 @@ fn dispArr(m) => {
             outString.push 32!
          }
          if comp ;== undefined {
-            print complexMag(comp)!
-            if 1000 < complexMag(comp) {
+            if 1000 > complexMag(comp) {
                outString.push 65!
             }
-            if 1000 > complexMag(comp) {
+            if 1000 < complexMag(comp) {
                outString.push 32!
             }
          }
@@ -123,12 +119,15 @@ fn main() =>
    const var ref_matrix = []!
    fillMatrix(ref_matrix, H, W)!
 
-   const const iterations = 3!
+   const const iterations = 30!
    when (iterations > 0) {
       performIter(matrix, ref_matrix!)
+
+      print iterations!
       iterations = iterations - 1!
    }
 
    dispArr matrix!
+
 }
 

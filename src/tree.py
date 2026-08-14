@@ -182,8 +182,12 @@ class AstIndexAccess:
 
     def traverse(self, ctx, path):
         addr = ctx.scope.get(self.name)
-        ctx.emit(f"mov rax, [vars + {addr}]")
 
+        if len(path):
+            ctx.emit(f"mov {binding.ABI[0]}, [vars + {addr}]")
+            ctx.emit("call obj_inc")
+
+        ctx.emit(f"mov rax, [vars + {addr}]")
         for index in path:
             ctx.emit(f"push rax")
             index.compile(ctx)
@@ -191,6 +195,7 @@ class AstIndexAccess:
 
             ctx.emit(f"pop {binding.ABI[0]}")
             ctx.emit("call util_get_ht")
+
 
 
     def store(self, ctx):

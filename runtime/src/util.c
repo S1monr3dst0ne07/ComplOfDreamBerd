@@ -103,6 +103,7 @@ entry_not_found:
 
 done:
     obj_dec(key);
+    obj_dec(table_obj);
     return elem;
 }
 
@@ -186,6 +187,7 @@ void util_cast_int_to_float(object_t x)
     int64_t val = (int64_t)x->data;
     double  real = (float)val;
     x->data = util_float_to_voidptr(real);
+    x->kind = KIND_FLOAT;
 }
 
 void util_type_coerce(object_t a, object_t b)
@@ -201,6 +203,24 @@ void util_type_coerce(object_t a, object_t b)
     if (x == KIND_FLOAT && y == KIND_INT) util_cast_int_to_float(b);
 }
 
+object_t util_operate_power(object_t a, object_t b)
+{
+    double res = 1.0;
+    uint64_t n = (uint64_t)b->data;
+
+    double x = util_voidptr_to_float(a->data);
+    while (n)
+    {
+        if (n & 1) res *= x;
+        x *= x;
+        n >>= 1;
+    }
+
+    return obj_create(KIND_FLOAT,
+        util_float_to_voidptr(res)
+    );
+}
+
 
 object_t util_operate(object_t b, object_t a, enum op_kind_e op)
 {
@@ -213,12 +233,19 @@ object_t util_operate(object_t b, object_t a, enum op_kind_e op)
     // object equality is type agnostic.
     /**/ if (op == OP_EQUAL)   ret = obj_create_cast(KIND_INT, obj_cmp(a, b));
     else if (op == OP_INEQUAL) ret = obj_create_cast(KIND_INT, (uint64_t)!obj_cmp(a, b));
+
+    // power function should not be type coerced
+    else if (op == OP_POWER)
+        ret = util_operate_power(a, b);
+
     else {
-        util_type_coerce(a, b);
+        if (a && b)
+        {
+            util_type_coerce(a, b);
 
-        if (a->kind != b->kind)
-            goto type_mismatch;
-
+            if (a->kind != b->kind)
+                goto type_mismatch;
+        }
 
         switch(a->kind)
         {
@@ -245,6 +272,8 @@ object_t util_operate(object_t b, object_t a, enum op_kind_e op)
 
 type_mismatch:
     putstr("Runtime Error: Arithemtic operation, type mismatch.\n");
+    putstr(single_int_to_string(op));
+    putstr("\n");
     putstr(single_int_to_string(a->kind));
     putstr("\n");
     putstr(single_int_to_string(b->kind));
